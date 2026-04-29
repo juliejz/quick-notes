@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>(function(){const t=new URLSearchParams(location.search).get('theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --surface: #131312; --surface2: #1F201D; --surface3: #272820;
+      --border: #52524B; --accent: #9ef53a; --on-accent: #0e0e0c;
+      --text: #eeeee8; --muted: #8a8a82; --bg: #1F201D; --card: #131312;
+    }
+    [data-theme="light"] {
+      --surface: #ffffff; --surface2: #fbfbf9; --surface3: #f3f3ef;
+      --border: #deded8; --accent: #3A9A1C; --on-accent: #ffffff;
+      --text: #111110; --muted: #66665e; --bg: #fbfbf9; --card: #ffffff;
+    }
+    html, body { width: 1280px; height: 720px; overflow: hidden; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
+    body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9998; opacity: 0.04; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23g)'/%3E%3C/svg%3E"); }
+    .app { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo-star { color: var(--accent); font-size: 14px; }
+    .logo-word { font-family: 'DM Serif Display', serif; font-size: 17px; font-style: italic; font-weight: 400; }
+    .theme-sw { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; }
+    .theme-btn { padding: 4px 10px; border-radius: 5px; border: none; font-size: 12px; color: var(--muted); background: transparent; cursor: pointer; }
+    .theme-btn.active { background: var(--bg); color: var(--text); }
+
+    .compose-wrap { padding: 16px 32px 0; flex-shrink: 0; }
+    .compose-row { position: relative; }
+    .compose-input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; line-height: 1.6; padding: 11px 90px 11px 14px; resize: none; outline: none; }
+    .compose-input::placeholder { color: var(--muted); }
+    .add-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); height: 30px; padding: 0 14px; background: var(--accent); color: var(--on-accent); border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+
+    .tab-bar { display: flex; padding: 0 32px; border-bottom: 1px solid var(--border); margin-top: 14px; flex-shrink: 0; }
+    .tab { padding: 9px 0; margin-right: 24px; font-size: 13px; font-weight: 500; color: var(--muted); position: relative; cursor: pointer; }
+    .tab.active { color: var(--text); }
+    .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1.5px; background: var(--accent); border-radius: 2px 2px 0 0; }
+
+    .content { flex: 1; overflow-y: auto; padding: 20px 32px 24px; }
+
+    /* ── Option 02: Compact table rows ── */
+    .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+
+    .table-header {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr 1fr 1fr 36px;
+      gap: 0;
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface3);
+    }
+    .th { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr 1fr 1fr 36px;
+      gap: 0;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      min-height: 52px;
+      transition: background 0.12s;
+      position: relative;
+    }
+    .table-row:last-child { border-bottom: none; }
+    .table-row:hover { background: var(--surface2); }
+
+    .td-name { padding-right: 12px; }
+    .td-name-main { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .td-name-sub { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+
+    /* Notes column */
+    .td-notes { padding-right: 12px; padding-top: 8px; padding-bottom: 8px; min-width: 0; position: relative; align-self: center; }
+    .td-notes-text {
+      font-size: 12px; color: var(--muted); line-height: 1.45;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; cursor: default;
+    }
+    .td-notes-text.editing { display: none; }
+    .td-notes-input {
+      display: none; width: 100%; background: none; border: none; border-bottom: 1px solid var(--accent);
+      color: var(--text); font: inherit; font-size: 12px; line-height: 1.45;
+      outline: none; resize: none; padding: 0; overflow: hidden;
+    }
+    .td-notes-input.visible { display: block; }
+    .td-notes-edit {
+      background: none; border: 1px solid transparent; border-radius: 5px;
+      color: var(--muted); cursor: pointer; padding: 2px 6px; font-size: 10px;
+      font-family: inherit; white-space: nowrap; opacity: 0; margin-top: 3px;
+      transition: opacity 0.12s, color 0.12s, border-color 0.12s; display: inline-block;
+    }
+    .table-row:hover .td-notes-edit { opacity: 1; }
+    .td-notes-edit:hover { color: var(--text); border-color: var(--border); }
+
+    .td-cell { display: flex; align-items: center; gap: 6px; padding-right: 12px; min-width: 0; }
+    .td-val {
+      font-size: 12px; font-family: 'SF Mono', ui-monospace, monospace;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
+    }
+    .td-val.url { color: var(--accent); }
+    .td-val.masked { color: var(--muted); letter-spacing: 0.15em; }
+
+    .copy-icon-btn {
+      background: none; border: 1px solid transparent; border-radius: 5px;
+      color: var(--muted); cursor: pointer; padding: 3px 7px; font-size: 11px;
+      font-family: inherit; white-space: nowrap; opacity: 0;
+      transition: opacity 0.12s, color 0.12s, border-color 0.12s;
+      flex-shrink: 0;
+    }
+    .table-row:hover .copy-icon-btn { opacity: 1; }
+    .copy-icon-btn:hover { color: var(--text); border-color: var(--border); }
+    .copy-icon-btn.copied { color: var(--accent); border-color: var(--accent); opacity: 1; }
+
+    .td-pass { display: flex; align-items: center; gap: 4px; padding-right: 12px; min-width: 0; }
+    .show-icon-btn {
+      background: none; border: 1px solid transparent; border-radius: 5px;
+      color: var(--muted); cursor: pointer; padding: 3px 7px; font-size: 11px;
+      font-family: inherit; white-space: nowrap; opacity: 0; flex-shrink: 0;
+      transition: opacity 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .table-row:hover .show-icon-btn { opacity: 1; }
+    .show-icon-btn:hover { color: var(--text); border-color: var(--border); }
+
+    .td-delete {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 12px; padding: 4px; opacity: 0; transition: opacity 0.12s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .table-row:hover .td-delete { opacity: 1; }
+    .td-delete:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <nav>
+    <div class="logo"><span class="logo-star">✦</span><span class="logo-word">Quick Notes</span></div>
+    <div class="theme-sw">
+      <button class="theme-btn" id="btn-light">Light</button>
+      <button class="theme-btn active" id="btn-dark">Dark</button>
+    </div>
+  </nav>
+  <div class="compose-wrap">
+    <div class="compose-row">
+      <input class="compose-input" placeholder="https://instance.service-now.com (admin / pass) #instance" />
+      <button class="add-btn">+ Add</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab">Notes</div>
+    <div class="tab">Inspiration</div>
+    <div class="tab">1:1 Notes</div>
+    <div class="tab active">Instances</div>
+  </div>
+  <div class="content">
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="th">Name</div>
+        <div class="th">Notes</div>
+        <div class="th">URL</div>
+        <div class="th">Username</div>
+        <div class="th">Password</div>
+        <div class="th"></div>
+      </div>
+      <div id="table-body"></div>
+    </div>
+  </div>
+</div>
+<script>
+  const DATA = [
+    { id:1, name:'ServiceNow BATD', domain:'batestd.service-now.com', url:'https://batestd.service-now.com/navpage.do', user:'sns_admin', pass:'Studio@247', notes:'Shared demo tenant — Q2 roadmap demos', time:'2h ago' },
+    { id:2, name:'Salesforce Demo Org', domain:'demo-org.lightning.force.com', url:'https://demo-org.lightning.force.com', user:'demo@acme.com', pass:'DemoPass123!', notes:'Clean org, no test data', time:'Yesterday' },
+    { id:3, name:'Zendesk Acme', domain:'acme.zendesk.com', url:'https://acme.zendesk.com/agent', user:'admin@acme.com', pass:'Zendesk@99', notes:'Customer success flow', time:'2 days ago' },
+    { id:4, name:'Atlassian Cloud', domain:'acme-demo.atlassian.net', url:'https://acme-demo.atlassian.net', user:'demo.user@atlassian.com', pass:'Atlas#2025', notes:'Jira + Confluence linked', time:'4 days ago' },
+    { id:5, name:'HubSpot Sandbox', domain:'app.hubspot.com', url:'https://app.hubspot.com', user:'sandbox@hubspot.com', pass:'Hub$pot22', notes:'Marketing automation demo', time:'5 days ago' },
+  ];
+
+  const shown = {};
+
+  function render() {
+    document.getElementById('table-body').innerHTML = DATA.map(d => `
+      <div class="table-row">
+        <div class="td-name">
+          <div class="td-name-main">${d.name}</div>
+          <div class="td-name-sub">${d.time}</div>
+        </div>
+        <div class="td-notes" id="notes-cell-${d.id}">
+          <div class="td-notes-text" title="${d.notes || ''}" id="notes-text-${d.id}">${d.notes || '<span style="color:var(--border)">—</span>'}</div>
+          <textarea class="td-notes-input" id="notes-input-${d.id}" rows="2" onblur="commitNotesEdit(${d.id})" onkeydown="notesKeydown(event,${d.id})"></textarea>
+          <button class="td-notes-edit" onclick="startNotesEdit(${d.id})">Edit</button>
+        </div>
+        <div class="td-cell">
+          <span class="td-val url">${d.domain}</span>
+          <button class="copy-icon-btn" onclick="copyField(this,'${d.url}')">Copy</button>
+        </div>
+        <div class="td-cell">
+          <span class="td-val">${d.user}</span>
+          <button class="copy-icon-btn" onclick="copyField(this,'${d.user}')">Copy</button>
+        </div>
+        <div class="td-pass">
+          <span class="td-val masked" id="pass-${d.id}">••••••••</span>
+          <button class="show-icon-btn" id="show-${d.id}" onclick="togglePass(${d.id},'${d.pass}')">Show</button>
+          <button class="copy-icon-btn" onclick="copyField(this,'${d.pass}')">Copy</button>
+        </div>
+        <button class="td-delete">✕</button>
+      </div>`).join('');
+  }
+
+  function startNotesEdit(id) {
+    const text = document.getElementById('notes-text-' + id);
+    const input = document.getElementById('notes-input-' + id);
+    const d = DATA.find(x => x.id === id);
+    input.value = d.notes || '';
+    text.classList.add('editing');
+    input.classList.add('visible');
+    input.style.height = Math.max(input.scrollHeight, 36) + 'px';
+    input.focus();
+  }
+
+  function commitNotesEdit(id) {
+    const text = document.getElementById('notes-text-' + id);
+    const input = document.getElementById('notes-input-' + id);
+    const d = DATA.find(x => x.id === id);
+    d.notes = input.value.trim();
+    text.textContent = d.notes || '';
+    text.setAttribute('title', d.notes || '');
+    if (!d.notes) text.innerHTML = '<span style="color:var(--border)">—</span>';
+    text.classList.remove('editing');
+    input.classList.remove('visible');
+  }
+
+  function notesKeydown(e, id) {
+    if (e.key === 'Escape') { document.getElementById('notes-input-' + id).blur(); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('notes-input-' + id).blur(); }
+  }
+
+  function togglePass(id, pass) {
+    const el  = document.getElementById('pass-' + id);
+    const btn = document.getElementById('show-' + id);
+    shown[id] = !shown[id];
+    el.textContent = shown[id] ? pass : '••••••••';
+    el.classList.toggle('masked', !shown[id]);
+    btn.textContent = shown[id] ? 'Hide' : 'Show';
+  }
+
+  function copyField(btn, val) {
+    navigator.clipboard?.writeText(val);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+  }
+
+  render();
+
+  window.addEventListener('message', e => {
+    if (!e.data?.theme) return;
+    document.documentElement.setAttribute('data-theme', e.data.theme);
+    document.getElementById('btn-light').classList.toggle('active', e.data.theme === 'light');
+    document.getElementById('btn-dark').classList.toggle('active', e.data.theme === 'dark');
+  });
+</script>
+</body>
+</html>

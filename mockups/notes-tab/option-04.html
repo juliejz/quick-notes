@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>(function(){const t=new URLSearchParams(location.search).get('theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #131312; --surface2: #1F201D; --surface3: #272820;
+      --border: #52524B; --accent: #9ef53a; --on-accent: #0e0e0c;
+      --text: #eeeee8; --muted: #8a8a82;
+      --bg: #1F201D; --card: #131312;
+    }
+    [data-theme="light"] {
+      --surface: #ffffff; --surface2: #fbfbf9; --surface3: #f3f3ef;
+      --border: #deded8; --accent: #3A9A1C; --on-accent: #ffffff;
+      --text: #111110; --muted: #66665e;
+      --bg: #fbfbf9; --card: #ffffff;
+    }
+
+    html, body {
+      width: 1280px; height: 720px; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+      font-size: 14px; -webkit-font-smoothing: antialiased;
+    }
+    body::after {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9998; opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23g)'/%3E%3C/svg%3E");
+    }
+
+    .app { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px; border-bottom: 1px solid var(--border);
+      background: var(--bg); flex-shrink: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo-star { color: var(--accent); font-size: 14px; }
+    .logo-word { font-family: 'DM Serif Display', serif; font-size: 17px; font-style: italic; font-weight: 400; }
+    .theme-sw { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; }
+    .theme-btn { padding: 4px 10px; border-radius: 5px; border: none; font-size: 12px; color: var(--muted); background: transparent; }
+    .theme-btn.active { background: var(--bg); color: var(--text); }
+
+    .compose-wrap { padding: 18px 32px 0; flex-shrink: 0; }
+    .compose-inner { position: relative; }
+    .compose-ta {
+      width: 100%; min-height: 96px; padding: 12px 14px 44px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-family: inherit; font-size: 14px; line-height: 1.55; resize: none; outline: none;
+    }
+    .compose-ta::placeholder { color: var(--muted); }
+    .compose-btn {
+      position: absolute; bottom: 8px; right: 8px; height: 32px; padding: 0 14px;
+      background: var(--accent); color: var(--on-accent); border: none; border-radius: 6px;
+      font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 5px;
+    }
+    .hint { padding: 6px 2px 0; font-size: 11px; color: var(--muted); display: flex; gap: 6px; }
+    .hint-tag { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 10px; font-family: 'SF Mono', monospace; }
+
+    .tab-bar { display: flex; padding: 0 32px; border-bottom: 1px solid var(--border); margin-top: 14px; flex-shrink: 0; }
+    .tab { padding: 9px 0; margin-right: 24px; font-size: 13px; font-weight: 500; color: var(--muted); position: relative; }
+    .tab.active { color: var(--text); }
+    .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1.5px; background: var(--accent); border-radius: 2px 2px 0 0; }
+
+    .content { flex: 1; overflow: hidden; padding: 18px 32px 0; }
+
+    /* ── Option 04: Unified timeline ── */
+    .feed { display: flex; flex-direction: column; }
+
+    .feed-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .feed-item:first-child { border-top: 1px solid var(--border); }
+
+    /* Checkbox for todos */
+    .cb {
+      width: 16px; height: 16px; border-radius: 4px;
+      border: 1.5px solid var(--border); flex-shrink: 0;
+    }
+    .cb.done { background: var(--accent); border-color: var(--accent); position: relative; }
+    .cb.done::after {
+      content: ''; position: absolute;
+      left: 3px; top: 1px; width: 8px; height: 5px;
+      border-left: 1.5px solid var(--on-accent); border-bottom: 1.5px solid var(--on-accent);
+      transform: rotate(-45deg);
+    }
+
+    /* Bullet for notes */
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+    }
+
+    .feed-text {
+      flex: 1; font-size: 14px; line-height: 1.5; color: var(--text);
+    }
+    .feed-text.done { color: var(--muted); text-decoration: line-through; }
+
+    .feed-time { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .feed-del { color: var(--muted); font-size: 11px; opacity: 0.4; flex-shrink: 0; padding: 4px 6px; cursor: pointer; }
+
+    .completed-toggle {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 0; color: var(--muted); font-size: 12px; cursor: pointer;
+      background: none; border: none; font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <nav>
+    <div class="logo">
+      <span class="logo-star">✦</span>
+      <span class="logo-word">Quick Notes</span>
+    </div>
+    <div class="theme-sw">
+      <button class="theme-btn" id="btn-light">Light</button>
+      <button class="theme-btn active" id="btn-dark">Dark</button>
+    </div>
+  </nav>
+
+  <div class="compose-wrap">
+    <div class="compose-inner">
+      <textarea class="compose-ta" placeholder="Write a note, add a task, save a prompt… tags route automatically"></textarea>
+      <button class="compose-btn">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add
+      </button>
+    </div>
+    <div class="hint">
+      Enter to save · <span class="hint-tag">[ ] task</span> <span class="hint-tag">#todo</span> <span class="hint-tag">#insp</span> <span class="hint-tag">@name</span> <span class="hint-tag">#instance</span>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab active">Notes</div>
+    <div class="tab">Inspiration</div>
+    <div class="tab">1:1 Notes</div>
+    <div class="tab">Instances</div>
+  </div>
+
+  <div class="content">
+    <!-- Single chronological feed: todos and notes interleaved -->
+    <div class="feed">
+
+      <div class="feed-item">
+        <div class="cb"></div>
+        <span class="feed-text">Review Q2 deck before Thursday's sync</span>
+        <span class="feed-time">2m ago</span>
+        <span class="feed-del">✕</span>
+      </div>
+
+      <div class="feed-item">
+        <div class="dot"></div>
+        <span class="feed-text">Don't forget the Figma file link for Sarah's handoff — she needs it by EOD</span>
+        <span class="feed-time">12m ago</span>
+        <span class="feed-del">✕</span>
+      </div>
+
+      <div class="feed-item">
+        <div class="cb"></div>
+        <span class="feed-text">Send follow-up to design team re: handoff spec</span>
+        <span class="feed-time">1h ago</span>
+        <span class="feed-del">✕</span>
+      </div>
+
+      <div class="feed-item">
+        <div class="dot"></div>
+        <span class="feed-text">Check new Claude Sonnet release notes — might affect the chatbot prompt</span>
+        <span class="feed-time">2h ago</span>
+        <span class="feed-del">✕</span>
+      </div>
+
+      <div class="feed-item">
+        <div class="cb"></div>
+        <span class="feed-text">Update JIRA tickets for sprint review</span>
+        <span class="feed-time">3h ago</span>
+        <span class="feed-del">✕</span>
+      </div>
+
+      <div class="feed-item">
+        <div class="dot"></div>
+        <span class="feed-text">Ask Marcus about the new onboarding flow — he mentioned a Loom somewhere</span>
+        <span class="feed-time">Yesterday</span>
+        <span class="feed-del">✕</span>
+      </div>
+
+      <div class="feed-item">
+        <div class="dot"></div>
+        <span class="feed-text">Prep questions for the platform deep-dive on Wednesday</span>
+        <span class="feed-time">Yesterday</span>
+        <span class="feed-del">✕</span>
+      </div>
+
+    </div>
+
+    <button class="completed-toggle">
+      <span style="font-size:9px">▸</span>
+      <span>Completed (2)</span>
+    </button>
+  </div>
+</div>
+<script>
+  window.addEventListener('message', e => {
+    if (!e.data?.theme) return;
+    document.documentElement.setAttribute('data-theme', e.data.theme);
+    document.getElementById('btn-light').classList.toggle('active', e.data.theme === 'light');
+    document.getElementById('btn-dark').classList.toggle('active', e.data.theme === 'dark');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,2839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+  <script>(function(){const t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Notes</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#131312" id="theme-meta" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Quick Notes" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+  <!-- Firebase compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --surface:  #131312;
+      --surface2: #1F201D;
+      --surface3: #272820;
+      --border:   #52524B;
+      --accent:     #9ef53a;
+      --on-accent:  #0e0e0c;
+      --text:     #eeeee8;
+      --muted:    #8a8a82;
+      --radius-card:  12px;
+      --radius-input: 8px;
+      --bg:   #1F201D;
+      --card: #131312;
+    }
+    [data-theme="light"] {
+      --surface:  #ffffff;
+      --surface2: #fbfbf9;
+      --surface3: #f3f3ef;
+      --border:   #deded8;
+      --accent:     #3A9A1C;
+      --on-accent:  #ffffff;
+      --text:     #111110;
+      --muted:    #66665e;
+      --bg:   #fbfbf9;
+      --card: #ffffff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* ── Grain ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9998;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23g)'/%3E%3C/svg%3E");
+      background-size: 250px 250px;
+    }
+
+    /* ── Layout ── */
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 32px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    @media (max-width: 600px) {
+      .app { padding: 0 16px; }
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0 0;
+    }
+
+    .wordmark {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'DM Serif Display', serif;
+      font-style: italic;
+      font-size: 18px;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      user-select: none;
+    }
+    .wordmark-star { color: var(--accent); font-style: normal; font-size: 14px; }
+
+    /* ── Theme toggle ── */
+    .theme-toggle {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .theme-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      transition: all 0.15s;
+      min-height: 28px;
+    }
+    .theme-btn.active { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    [data-theme="light"] .theme-btn.active { background: var(--card); }
+    .theme-btn:hover:not(.active) { color: var(--text); }
+    .theme-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ── Auth ── */
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .auth-btn {
+      background: none; border: 1px solid var(--border); border-radius: 6px;
+      color: var(--muted); font-family: inherit; font-size: 12px;
+      padding: 4px 10px; min-height: 28px; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .auth-btn:hover { color: var(--text); border-color: var(--text); }
+    .auth-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1px solid var(--border); cursor: pointer;
+      object-fit: cover;
+    }
+    .auth-initial {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--surface3); border: 1px solid var(--border);
+      color: var(--text); font-size: 11px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; user-select: none;
+    }
+    .sync-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); display: none;
+    }
+    .sync-dot.visible { display: block; }
+
+    /* ── Global compose ── */
+    .compose-wrap {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .compose-row {
+      position: relative;
+    }
+    .compose-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--card);
+      border: 1px solid transparent;
+      border-radius: var(--radius-input);
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 14px 16px 52px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: hidden;
+      pointer-events: none;
+      color: var(--text);
+      box-sizing: border-box;
+    }
+    .tag-highlight { color: var(--accent); }
+    .ghost-line { color: var(--border); }
+
+    .compose-input {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-input);
+      color: transparent;
+      caret-color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 14px 16px 52px;
+      resize: none;
+      min-height: 168px;
+      max-height: 320px;
+      overflow-y: auto;
+      outline: none;
+      transition: border-color 0.15s;
+      display: block;
+    }
+    .compose-input::placeholder { color: var(--muted); }
+    .compose-input:focus { border-color: var(--accent); }
+    .add-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      height: 36px;
+      padding: 0 16px;
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--on-accent);
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .add-btn:hover { opacity: 0.88; }
+    .add-btn:active { transform: scale(0.97); }
+    .add-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    /* ── Tag autocomplete dropdown ── */
+    #tag-suggestions {
+      position: absolute;
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 200;
+      min-width: 160px;
+    }
+    #tag-suggestions.visible { display: block; }
+    .tag-sugg-item {
+      padding: 7px 12px;
+      font-size: 12px;
+      font-family: 'SF Mono', ui-monospace, monospace;
+      color: var(--accent);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .tag-sugg-item.active { background: var(--surface3); }
+
+    .compose-hint {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 0 2px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .hint-tag {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: 'SF Mono', ui-monospace, monospace;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ── Customize link ── */
+    .customize-link {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      text-decoration: none;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+      transition: color 0.15s;
+    }
+    .customize-link:hover { color: var(--accent); }
+
+    /* ── Customize modal ── */
+    .customize-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .customize-overlay.open { opacity: 1; pointer-events: all; }
+
+    .customize-modal {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 520px;
+      max-width: calc(100vw - 40px);
+      max-height: calc(100vh - 80px);
+      display: flex; flex-direction: column;
+      transform: translateY(12px) scale(0.98);
+      transition: transform 0.25s cubic-bezier(0.34,1.2,0.64,1);
+      overflow: hidden;
+    }
+    .customize-overlay.open .customize-modal { transform: translateY(0) scale(1); }
+
+    .customize-modal-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .customize-modal-title {
+      font-size: 14px; font-weight: 600; color: var(--text);
+    }
+    .customize-modal-close {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 16px; padding: 2px 6px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .customize-modal-close:hover { color: var(--text); background: var(--surface3); }
+
+    .customize-modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .customize-col-labels {
+      display: grid;
+      grid-template-columns: 28px 1fr 1fr 28px;
+      gap: 8px;
+      padding: 0 0 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .customize-row {
+      display: grid;
+      grid-template-columns: 28px 1fr 1fr 28px;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 0;
+      border-radius: 8px;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .customize-row.dragging { opacity: 0.4; }
+    .customize-row.drag-over { background: var(--surface3); }
+
+    .drag-handle {
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); cursor: grab; font-size: 14px;
+      user-select: none; height: 32px;
+    }
+    .drag-handle:active { cursor: grabbing; }
+
+    .cust-input {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 9px;
+      font-size: 12px; color: var(--text);
+      font-family: inherit;
+      width: 100%; outline: none;
+      transition: border-color 0.15s;
+    }
+    .cust-input:focus { border-color: var(--accent); }
+    .cust-input:disabled { color: var(--muted); cursor: default; opacity: 0.6; }
+
+    .cust-tag-wrap { position: relative; }
+    .cust-tag-sugg {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; z-index: 20; overflow: hidden;
+      display: none;
+    }
+    .cust-tag-sugg.visible { display: block; }
+    .cust-tag-sugg-item {
+      padding: 6px 10px; font-size: 12px; color: var(--text);
+      cursor: pointer; font-family: 'SF Mono', ui-monospace, monospace;
+      transition: background 0.1s;
+    }
+    .cust-tag-sugg-item:hover, .cust-tag-sugg-item.active { background: var(--surface3); }
+
+    .cust-conflict {
+      font-size: 11px; color: #f59e0b;
+      margin-top: 2px; display: none;
+    }
+    .cust-conflict.visible { display: block; }
+
+    .hide-toggle {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 32px;
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .hide-toggle:hover { color: var(--text); background: var(--surface3); }
+    .hide-toggle.hidden-tab { color: var(--border); }
+
+    .customize-modal-footer {
+      padding: 12px 20px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .cust-reset {
+      font-size: 12px; color: var(--muted); background: none; border: none;
+      cursor: pointer; padding: 0; font-family: inherit;
+      transition: color 0.15s;
+    }
+    .cust-reset:hover { color: var(--text); }
+    .cust-save-btn {
+      background: var(--accent); color: var(--on-accent);
+      border: none; border-radius: 8px;
+      padding: 7px 20px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    .cust-save-btn:hover { opacity: 0.85; }
+
+    /* ── Tab nav ── */
+    .tab-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-top: 20px;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 10px 14px 9px;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+    .tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    /* ── Section ── */
+    .section { display: flex; flex-direction: column; flex: 1; }
+    .section.hidden { display: none; }
+
+    /* ── Action / copy buttons (shared) ── */
+    .action-btn {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      cursor: pointer;
+      padding: 0 8px;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--muted);
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .action-btn:hover { color: var(--text); border-color: var(--muted); }
+    .action-btn.copied { color: var(--accent); border-color: var(--accent); }
+    .action-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ── View toggle (shared) ── */
+    .view-toggle {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .view-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      transition: all 0.15s;
+      min-height: 28px;
+    }
+    .view-btn.active { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    [data-theme="light"] .view-btn.active { background: var(--card); }
+    .view-btn:hover:not(.active) { color: var(--text); }
+    .view-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 0 80px;
+      gap: 8px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .empty-icon { font-size: 28px; margin-bottom: 4px; opacity: 0.5; }
+    .empty-state p { font-size: 14px; }
+    .empty-state span { font-size: 12px; opacity: 0.7; }
+
+    /* ══════════════════════════════════════════
+       NOTES TAB — Split layout
+    ══════════════════════════════════════════ */
+    .notes-split {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .col-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .todos-section { }
+
+    .todos-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+    }
+    .todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 11px 14px;
+    }
+    .todo-item.new-item { animation: slide-in 0.18s ease-out both; }
+
+    .todo-checkbox {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      margin-top: 2px;
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
+      transition: background 0.12s, border-color 0.12s;
+      position: relative;
+    }
+    .todo-checkbox:checked { background: var(--accent); border-color: var(--accent); }
+    .todo-checkbox:checked::after {
+      content: '';
+      position: absolute;
+      left: 3px; top: 1px;
+      width: 8px; height: 5px;
+      border-left: 1.5px solid var(--on-accent);
+      border-bottom: 1.5px solid var(--on-accent);
+      transform: rotate(-45deg);
+    }
+    .todo-checkbox:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .todo-text {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .todo-item.done .todo-text { text-decoration: line-through; color: var(--muted); }
+
+    .todo-time { font-size: 11px; color: var(--muted); white-space: nowrap; margin-top: 2px; flex-shrink: 0; }
+
+    .todo-delete {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      margin: -11px -14px -11px 0;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .todo-item:hover .todo-delete { opacity: 1; }
+    .todo-delete:hover { color: var(--text); }
+    .todo-delete:focus-visible { opacity: 1; outline: 2px solid var(--accent); border-radius: 4px; }
+    @media (hover: none) { .todo-delete { opacity: 0.45; } }
+
+    /* ── Completed chevron ── */
+    .completed-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 14px 9px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      font-family: inherit;
+      transition: color 0.15s;
+      user-select: none;
+    }
+    .completed-toggle:hover { color: var(--text); }
+    .completed-toggle:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
+    .chevron {
+      display: inline-block;
+      transition: transform 0.18s;
+      flex-shrink: 0;
+    }
+    .chevron.open { transform: rotate(90deg); }
+    .completed-list.collapsed { display: none; }
+
+    /* ── Plain notes ── */
+    .notes-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 32px; }
+
+    .note-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 12px 14px;
+      animation: slide-in 0.18s ease-out both;
+      transition: border-color 0.15s;
+    }
+    .note-card:hover { border-color: var(--muted); }
+    .note-bullet {
+      flex-shrink: 0;
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-top: 5px;
+    }
+    .note-text {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .note-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      margin: -5px -5px 0 0;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .note-card:hover .delete-btn { opacity: 1; }
+    .delete-btn:hover { color: var(--text); }
+    .delete-btn:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+    @media (hover: none) { .delete-btn { opacity: 0.45; } }
+    .note-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+    /* ══════════════════════════════════════════
+       INSPIRATION TAB
+    ══════════════════════════════════════════ */
+    .insp-toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+
+    /* grid */
+    .insp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding-bottom: 32px;
+    }
+    @media (max-width: 560px) { .insp-grid { grid-template-columns: 1fr; } }
+
+    .insp-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      animation: slide-in 0.18s ease-out both;
+      transition: border-color 0.15s;
+    }
+    .insp-card:hover { border-color: var(--muted); }
+
+    .insp-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .insp-card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+      flex: 1;
+    }
+    .insp-delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      min-height: 32px;
+      margin: -4px -4px 0 0;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .insp-card:hover .insp-delete-btn { opacity: 1; }
+    .insp-delete-btn:hover { color: var(--text); }
+    .insp-delete-btn:focus-visible { opacity: 1; outline: 2px solid var(--accent); border-radius: 4px; }
+    @media (hover: none) { .insp-delete-btn { opacity: 0.45; } }
+
+    .insp-card-body {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      white-space: pre-wrap;
+      flex: 1;
+    }
+    .insp-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .insp-tags { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+    .insp-tag {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+    }
+
+    /* doc */
+    .insp-doc { display: flex; flex-direction: column; padding-bottom: 32px; }
+
+    .insp-doc-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      animation: slide-in 0.18s ease-out both;
+    }
+    .insp-doc-row:first-child { border-top: 1px solid var(--border); }
+
+    .insp-doc-text {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.55;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .insp-doc-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .insp-doc-delete {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      min-height: 36px;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .insp-doc-row:hover .insp-doc-delete { opacity: 1; }
+    .insp-doc-delete:hover { color: var(--text); }
+    .insp-doc-delete:focus-visible { opacity: 1; outline: 2px solid var(--accent); border-radius: 4px; }
+    @media (hover: none) { .insp-doc-delete { opacity: 0.45; } }
+    .insp-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+    /* ══════════════════════════════════════════
+       1:1 NOTES TAB
+    ══════════════════════════════════════════ */
+    /* ── Person card grid ── */
+    .oon-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding-bottom: 32px;
+    }
+    .person-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .person-card:hover { border-color: var(--muted); }
+    .person-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 14px 10px;
+    }
+    .person-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--accent); color: var(--on-accent);
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .person-name {
+      font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .person-note-count { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .person-copy-btn {
+      margin-left: auto;
+      background: var(--card); border: 1px solid var(--border); border-radius: 5px;
+      padding: 3px 9px; font-size: 11px; font-family: inherit;
+      color: var(--muted); cursor: pointer;
+      opacity: 0; transition: opacity 0.15s, color 0.15s;
+    }
+    .person-card:hover .person-copy-btn { opacity: 1; }
+    .person-copy-btn:hover { color: var(--text); }
+    .person-copy-btn.copied { color: var(--accent); border-color: var(--accent); opacity: 1; }
+
+    .person-notes-preview {
+      position: relative; padding: 0 14px; max-height: 112px; overflow: hidden;
+    }
+    .person-preview-line {
+      font-size: 12.5px; color: var(--muted); line-height: 1.55; padding: 1.5px 0;
+    }
+    .person-preview-fade {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 22px;
+      background: linear-gradient(to bottom, transparent, var(--card));
+      pointer-events: none;
+    }
+
+    /* ── Oon modal ── */
+    .oon-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px); z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .oon-modal-overlay.open { opacity: 1; pointer-events: all; }
+    .oon-modal {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      width: 520px; max-height: 540px; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .oon-modal-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 20px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .oon-modal-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--accent); color: var(--on-accent);
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .oon-modal-person { flex: 1; }
+    .oon-modal-name { font-size: 14px; font-weight: 600; }
+    .oon-modal-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .oon-modal-head-btns { display: flex; align-items: center; gap: 8px; }
+    .oon-modal-copy-btn {
+      font-size: 12px; color: var(--muted); background: none;
+      border: 1px solid var(--border); border-radius: 6px; padding: 5px 12px;
+      cursor: pointer; font-family: inherit; transition: color 0.15s;
+    }
+    .oon-modal-copy-btn:hover { color: var(--text); }
+    .oon-modal-copy-btn.copied { color: var(--accent); border-color: var(--accent); }
+    .oon-modal-close {
+      width: 28px; height: 28px; border-radius: 6px;
+      border: 1px solid var(--border); background: none;
+      color: var(--muted); font-size: 13px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .oon-modal-close:hover { color: var(--text); }
+
+    .oon-modal-body { flex: 1; overflow-y: auto; }
+    .oon-item {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 14px 20px;
+      position: relative;
+      animation: slide-in 0.18s ease-out both;
+    }
+    .oon-item:hover { background: var(--surface2); }
+    .oon-bullet { flex-shrink: 0; color: var(--muted); font-size: 7px; margin-top: 2px; }
+    .oon-text {
+      flex: 1; font-size: 13.5px; color: var(--text);
+      line-height: 1.5; word-break: break-word; white-space: pre-wrap; cursor: text;
+    }
+    .oon-text:hover { color: var(--accent); }
+    .oon-edit-input {
+      flex: 1; background: none; border: none; border-bottom: 1px solid var(--accent);
+      outline: none; font: inherit; font-size: 13.5px; color: var(--text);
+      padding: 0 0 1px; line-height: 1.5; resize: none; overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    }
+    .oon-time { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .oon-delete {
+      position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 12px; padding: 4px;
+      opacity: 0; transition: opacity 0.15s, color 0.15s;
+    }
+    .oon-item:hover .oon-delete { opacity: 1; }
+    .oon-item:hover .oon-time { opacity: 0; }
+    .oon-delete:hover { color: var(--text); }
+
+    .oon-modal-add-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 20px; border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+    .oon-modal-add-input {
+      flex: 1; background: var(--surface3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 7px 12px; font: inherit; font-size: 13px;
+      color: var(--text); outline: none; font-family: inherit;
+    }
+    .oon-modal-add-input::placeholder { color: var(--muted); }
+    .oon-modal-add-input:focus { border-color: var(--accent); }
+    .oon-modal-add-btn {
+      padding: 7px 14px; background: var(--accent); color: var(--on-accent);
+      border: none; border-radius: 6px; font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+    }
+    .copy-all-btn { display: none; } /* legacy, keep for JS compat */
+
+    /* ── Demo edit modal ── */
+    .demo-edit-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px); z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .demo-edit-overlay.open { opacity: 1; pointer-events: all; }
+    .demo-edit-modal {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      width: 480px; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .demo-edit-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px 16px; border-bottom: 1px solid var(--border);
+    }
+    .demo-edit-title { font-size: 14px; font-weight: 600; }
+    .demo-edit-close {
+      width: 28px; height: 28px; border-radius: 6px;
+      border: 1px solid var(--border); background: none;
+      color: var(--muted); font-size: 13px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .demo-edit-close:hover { color: var(--text); }
+    .demo-edit-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .demo-edit-field { display: flex; flex-direction: column; gap: 5px; }
+    .demo-edit-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .demo-edit-input {
+      background: var(--surface3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px 12px; font: inherit; font-size: 13px;
+      color: var(--text); outline: none; font-family: inherit; width: 100%; box-sizing: border-box;
+    }
+    .demo-edit-input:focus { border-color: var(--accent); }
+    .demo-edit-input::placeholder { color: var(--muted); }
+    .demo-edit-input.is-mono { font-family: 'SF Mono', ui-monospace, 'Fira Code', monospace; font-size: 12px; }
+    .demo-edit-foot {
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 14px 20px; border-top: 1px solid var(--border);
+    }
+    .demo-edit-cancel {
+      font-size: 13px; color: var(--muted); background: none;
+      border: 1px solid var(--border); border-radius: 6px; padding: 7px 16px;
+      cursor: pointer; font-family: inherit;
+    }
+    .demo-edit-cancel:hover { color: var(--text); }
+    .demo-edit-save {
+      padding: 7px 16px; background: var(--accent); color: var(--on-accent);
+      border: none; border-radius: 6px; font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+    }
+
+    /* ── Edit icon on demo cards ── */
+    .demo-edit-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 12px; padding: 3px 5px;
+      opacity: 0; transition: opacity 0.15s, color 0.15s; flex-shrink: 0;
+    }
+    .demo-card:hover .demo-edit-btn,
+    .demo-wide-card:hover .demo-edit-btn,
+    .demo-tr:hover .demo-edit-btn { opacity: 1; }
+    .demo-edit-btn:hover { color: var(--text); }
+
+    /* ══════════════════════════════════════════
+       INSTANCES TAB
+    ══════════════════════════════════════════ */
+    .demo-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .demo-sort-group { display: flex; align-items: center; gap: 8px; }
+    .demo-sort-label { font-size: 11px; color: var(--muted); }
+    .demo-sort-select {
+      background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); font-family: inherit; font-size: 12px; padding: 5px 9px;
+      outline: none; cursor: pointer; min-height: 28px;
+    }
+    .demo-sort-dir {
+      background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--muted); font-size: 11px; padding: 5px 10px; cursor: pointer;
+      font-family: inherit; min-height: 28px; transition: color 0.15s; white-space: nowrap;
+    }
+    .demo-sort-dir:hover { color: var(--text); }
+
+    /* ── View 1: Grid cards (option-01 style) ── */
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-bottom: 32px; }
+    @media (max-width: 560px) { .demo-grid { grid-template-columns: 1fr; } }
+
+    .demo-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-card);
+      padding: 16px; display: flex; flex-direction: column; gap: 10px;
+      animation: slide-in 0.18s ease-out both; transition: border-color 0.15s;
+    }
+    .demo-card:hover { border-color: var(--muted); }
+    .demo-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .demo-card-title-row { display: flex; align-items: center; gap: 8px; }
+    .demo-card-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+    .demo-card-time-sub { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .demo-delete-btn {
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      min-width: 32px; min-height: 32px; margin: -4px -4px 0 0;
+      flex-shrink: 0; opacity: 0; transition: opacity 0.15s, color 0.15s;
+    }
+    .demo-card:hover .demo-delete-btn { opacity: 1; }
+    .demo-delete-btn:hover { color: var(--text); }
+    .demo-delete-btn:focus-visible { opacity: 1; outline: 2px solid var(--accent); border-radius: 4px; }
+    @media (hover: none) { .demo-delete-btn { opacity: 0.45; } }
+
+    .demo-field { display: flex; align-items: center; gap: 6px; min-height: 26px; }
+    .demo-field-label { font-size: 10px; color: var(--muted); width: 28px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+    .demo-field-value {
+      flex: 1; font-size: 12px; color: var(--text);
+      font-family: 'SF Mono', ui-monospace, 'Fira Code', monospace;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    }
+    .demo-field-value.is-url { color: var(--accent); text-decoration: none; cursor: pointer; }
+    .demo-field-value.is-url:hover { text-decoration: underline; }
+    .demo-field-value.is-masked { letter-spacing: 0.15em; color: var(--muted); }
+    .demo-notes-text { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+    /* ── View 2: Wide cards (option-03 style) ── */
+    .demo-wide { display: flex; flex-direction: column; gap: 10px; padding-bottom: 32px; }
+    .demo-wide-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; display: flex; align-items: stretch; gap: 16px;
+      transition: border-color 0.15s; animation: slide-in 0.18s ease-out both;
+    }
+    .demo-wide-card:hover { border-color: var(--muted); }
+    .demo-wide-col1 { flex: 0 0 140px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .demo-wide-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .demo-wide-time { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .demo-wide-col3 { flex: 0 0 auto; width: 46%; display: flex; flex-direction: column; gap: 5px; justify-content: center; }
+    .demo-wide-col2 { flex: 1; min-width: 0; display: flex; align-items: center; padding-left: 20px; }
+    .demo-wide-notes { font-size: 12px; color: var(--muted); line-height: 1.5; word-break: break-word; }
+    .demo-wide-actions { flex: 0 0 52px; display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+    .demo-wide-row { display: flex; align-items: center; gap: 8px; }
+    .demo-wide-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; width: 30px; flex-shrink: 0; }
+    .demo-wide-val { font-size: 12px; font-family: 'SF Mono', ui-monospace, monospace; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+    .demo-wide-val.is-url { color: var(--accent); }
+    .demo-wide-val.is-masked { color: var(--muted); letter-spacing: 0.15em; }
+    .demo-wide-copy {
+      font-size: 11px; padding: 3px 9px; border-radius: 5px; border: 1px solid var(--border);
+      background: none; color: var(--muted); cursor: pointer; font-family: inherit;
+      transition: color 0.15s, border-color 0.15s; white-space: nowrap; flex-shrink: 0;
+    }
+    .demo-wide-copy:hover { color: var(--text); border-color: var(--muted); }
+    .demo-wide-copy.copied { color: var(--accent); border-color: var(--accent); }
+    .demo-wide-show { background: none; border: none; font-size: 11px; color: var(--muted); cursor: pointer; padding: 0; font-family: inherit; flex-shrink: 0; min-width: 28px; }
+    .demo-wide-show:hover { color: var(--text); }
+    .demo-wide-del {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      opacity: 0; transition: opacity 0.15s; padding: 4px; display: flex; align-items: center;
+    }
+    .demo-wide-card:hover .demo-wide-del { opacity: 1; }
+    .demo-wide-del:hover { color: var(--text); }
+    .demo-wide-card .demo-edit-btn { opacity: 0; }
+    .demo-wide-card:hover .demo-edit-btn { opacity: 1; }
+
+    /* ── View 3: Table (option-02 style) ── */
+    .demo-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 32px; }
+    .demo-th-row, .demo-tr { display: grid; grid-template-columns: 150px 1fr 110px 130px 130px 56px; padding: 0 16px; }
+    .demo-th-row { padding-top: 9px; padding-bottom: 9px; border-bottom: 1px solid var(--border); background: var(--surface3); }
+    .demo-th { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+    .demo-tr { border-bottom: 1px solid var(--border); align-items: center; min-height: 52px; transition: background 0.12s; position: relative; }
+    .demo-tr:last-child { border-bottom: none; }
+    .demo-tr:hover { background: var(--surface2); }
+    .demo-td-name { padding-right: 12px; padding-top: 6px; padding-bottom: 6px; }
+    .demo-td-main { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .demo-td-sub { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+    .demo-td-notes { padding-right: 12px; padding-top: 6px; padding-bottom: 6px; min-width: 0; align-self: center; }
+    .demo-td-notes-text { font-size: 12px; color: var(--muted); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .demo-td-cell { display: flex; align-items: center; gap: 6px; padding-right: 12px; min-width: 0; }
+    .demo-td-val { font-size: 12px; font-family: 'SF Mono', ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+    .demo-td-val.is-url { color: var(--accent); }
+    .demo-td-val.is-masked { color: var(--muted); letter-spacing: 0.15em; }
+    .demo-td-copy {
+      background: none; border: 1px solid transparent; border-radius: 5px;
+      color: var(--muted); cursor: pointer; padding: 3px 7px; font-size: 11px;
+      font-family: inherit; white-space: nowrap; opacity: 0;
+      transition: opacity 0.12s, color 0.12s, border-color 0.12s; flex-shrink: 0;
+    }
+    .demo-tr:hover .demo-td-copy { opacity: 1; }
+    .demo-td-copy:hover { color: var(--text); border-color: var(--border); }
+    .demo-td-copy.copied { color: var(--accent); border-color: var(--accent); opacity: 1; }
+    .demo-td-show {
+      background: none; border: 1px solid transparent; border-radius: 5px;
+      color: var(--muted); cursor: pointer; padding: 3px 7px; font-size: 11px;
+      font-family: inherit; white-space: nowrap; opacity: 0; flex-shrink: 0;
+      transition: opacity 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .demo-tr:hover .demo-td-show { opacity: 1; }
+    .demo-td-show:hover { color: var(--text); border-color: var(--border); }
+    .demo-td-actions { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+    .demo-td-del {
+      background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px;
+      padding: 4px; opacity: 0; transition: opacity 0.12s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .demo-tr:hover .demo-td-del { opacity: 1; }
+    .demo-td-del:hover { color: var(--text); }
+
+    /* ── Animations ── */
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-out {
+      to { opacity: 0; transform: scale(0.97); }
+    }
+    .removing { animation: fade-out 0.15s ease-in forwards !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    /* ── Inline editing ── */
+    .todo-text { cursor: text; }
+    .note-text { cursor: text; }
+
+    .note-card.editing { border-color: var(--accent) !important; }
+
+    .todo-edit-input {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.5;
+      font-family: inherit;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 0;
+      min-width: 0;
+    }
+    .note-edit-textarea {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+      font-family: inherit;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 0;
+      resize: none;
+      overflow: hidden;
+      min-width: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- Nav -->
+    <nav>
+      <div class="wordmark">
+        <span class="wordmark-star">✦</span>
+        Quick Notes
+      </div>
+      <div class="nav-right">
+        <div class="sync-dot" id="sync-dot" title="Syncing…"></div>
+        <div id="auth-slot">
+          <button class="auth-btn" onclick="signInWithGoogle()">Sign in</button>
+        </div>
+        <div class="theme-toggle" role="group" aria-label="Theme">
+          <button class="theme-btn" id="btn-light" onclick="setTheme('light')">Light</button>
+          <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Global compose -->
+    <div class="compose-wrap">
+      <div class="compose-row">
+        <div class="compose-backdrop" id="compose-backdrop"></div>
+        <textarea
+          class="compose-input"
+          id="compose"
+          placeholder="Type a note…"
+          rows="1"
+          aria-label="New entry"
+        ></textarea>
+        <div id="tag-suggestions"></div>
+        <button class="add-btn" onclick="handleAdd()" aria-label="Add">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3v10M3 8h10" stroke="var(--on-accent)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Add
+        </button>
+      </div>
+      <div class="compose-hint" id="compose-hint">
+        <span>Enter to save · Shift+Enter for new line</span>
+        <span class="hint-tag">[ ] task</span>
+        <span class="hint-tag">#todo</span>
+        <span class="hint-tag">#insp</span>
+        <span class="hint-tag">@name</span>
+        <span class="hint-tag">#instance</span>
+        <button class="customize-link" onclick="openCustomize()">Customize</button>
+      </div>
+    </div>
+
+    <!-- Tabs (rendered dynamically by renderTabBar()) -->
+    <div class="tab-nav" role="tablist"></div>
+
+    <!-- Notes -->
+    <div class="section" id="section-notes" role="tabpanel">
+      <div class="notes-split" id="notes-split">
+        <div class="notes-col-tasks">
+          <div class="col-label">Tasks</div>
+          <div class="todos-section" id="todos-section"></div>
+        </div>
+        <div class="notes-col-notes">
+          <div class="col-label">Notes</div>
+          <div class="notes-list" id="notes-list"></div>
+        </div>
+      </div>
+      <div id="notes-empty" class="hidden"></div>
+    </div>
+
+    <!-- Inspiration -->
+    <div class="section hidden" id="section-insp" role="tabpanel">
+      <div class="insp-toolbar">
+        <div class="view-toggle" role="group" aria-label="View">
+          <button class="view-btn active" id="btn-insp-grid" onclick="setInspView('grid')">Grid</button>
+          <button class="view-btn"        id="btn-insp-doc"  onclick="setInspView('doc')">Doc</button>
+        </div>
+      </div>
+      <div id="insp-container"></div>
+    </div>
+
+    <!-- 1:1 Notes -->
+    <div class="section hidden" id="section-oon" role="tabpanel">
+      <div class="oon-grid" id="oon-grid"></div>
+    </div>
+
+    <!-- 1:1 Notes modal -->
+    <div class="oon-modal-overlay" id="oon-modal-overlay" onclick="if(event.target===this)closeOonModal()">
+      <div class="oon-modal">
+        <div class="oon-modal-head">
+          <div class="oon-modal-avatar" id="oon-modal-avatar"></div>
+          <div class="oon-modal-person">
+            <div class="oon-modal-name" id="oon-modal-name"></div>
+            <div class="oon-modal-meta" id="oon-modal-meta"></div>
+          </div>
+          <div class="oon-modal-head-btns">
+            <button class="oon-modal-copy-btn" id="oon-modal-copy-btn" onclick="copyAllOonModal()">Copy all</button>
+            <button class="oon-modal-close" onclick="closeOonModal()">✕</button>
+          </div>
+        </div>
+        <div class="oon-modal-body" id="oon-modal-body"></div>
+        <div class="oon-modal-add-row">
+          <input class="oon-modal-add-input" id="oon-modal-add-input" placeholder="Add a note…" />
+          <button class="oon-modal-add-btn" onclick="addOonFromModal()">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo edit modal -->
+    <div class="demo-edit-overlay" id="demo-edit-overlay" onclick="if(event.target===this)closeDemoEdit()">
+      <div class="demo-edit-modal">
+        <div class="demo-edit-head">
+          <div class="demo-edit-title">Edit instance</div>
+          <button class="demo-edit-close" onclick="closeDemoEdit()" aria-label="Close">✕</button>
+        </div>
+        <div class="demo-edit-body">
+          <div class="demo-edit-field">
+            <label class="demo-edit-label" for="de-name">Name</label>
+            <input class="demo-edit-input" id="de-name" placeholder="Instance name" />
+          </div>
+          <div class="demo-edit-field">
+            <label class="demo-edit-label" for="de-url">URL</label>
+            <input class="demo-edit-input is-mono" id="de-url" placeholder="https://…" type="url" />
+          </div>
+          <div class="demo-edit-field">
+            <label class="demo-edit-label" for="de-username">Username</label>
+            <input class="demo-edit-input" id="de-username" placeholder="Username" autocomplete="off" />
+          </div>
+          <div class="demo-edit-field">
+            <label class="demo-edit-label" for="de-password">Password</label>
+            <input class="demo-edit-input is-mono" id="de-password" placeholder="Password" autocomplete="off" />
+          </div>
+          <div class="demo-edit-field">
+            <label class="demo-edit-label" for="de-notes">Notes</label>
+            <input class="demo-edit-input" id="de-notes" placeholder="Optional notes" />
+          </div>
+        </div>
+        <div class="demo-edit-foot">
+          <button class="demo-edit-cancel" onclick="closeDemoEdit()">Cancel</button>
+          <button class="demo-edit-save" onclick="saveDemoEdit()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instances -->
+    <div class="section hidden" id="section-demos" role="tabpanel">
+      <div class="demo-toolbar">
+        <div class="demo-sort-group">
+          <span class="demo-sort-label">Sort</span>
+          <select class="demo-sort-select" id="demo-sort-select" onchange="setSortBy(this.value)">
+            <option value="time">Time added</option>
+            <option value="name">Name</option>
+            <option value="url">URL / Product</option>
+          </select>
+          <button class="demo-sort-dir" id="demo-sort-dir" onclick="toggleSortDir()">↓ Newest</button>
+        </div>
+        <div class="view-toggle" role="group" aria-label="View">
+          <button class="view-btn"        id="btn-demo-grid"  onclick="setDemoView('grid')">Grid</button>
+          <button class="view-btn active" id="btn-demo-wide"  onclick="setDemoView('wide')">Wide</button>
+        </div>
+      </div>
+      <div id="demos-container"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Storage ──────────────────────────────────
+    const NOTES_KEY    = 'quick-notes';
+    const TODOS_KEY    = 'quick-todos';
+    const INSP_KEY     = 'quick-insp';
+    const OON_KEY      = 'quick-oon';
+    const DEMOS_KEY    = 'demo-instances';
+    const THEME_KEY    = 'theme';
+    const DVIEW_KEY    = 'demo-view';
+    const IVIEW_KEY    = 'insp-view';
+    const TABS_CFG_KEY = 'quick-tabs-config';
+
+    const DEFAULT_TABS_CONFIG = [
+      { id: 'notes', label: 'Notes',       tags: [],                                           fixedTags: true,  hidden: false },
+      { id: 'insp',  label: 'Inspiration', tags: ['#insp'],                                    fixedTags: false, hidden: false },
+      { id: 'oon',   label: '1:1 Notes',   tags: ['@'],                                        fixedTags: true,  hidden: false },
+      { id: 'demos', label: 'Instances',   tags: ['#instance','#demo','#link','#cred','#credentials'], fixedTags: false, hidden: false },
+    ];
+
+    function loadTabsConfig() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(TABS_CFG_KEY));
+        if (!saved || !Array.isArray(saved)) return DEFAULT_TABS_CONFIG.map(t => ({...t}));
+        // Merge saved over defaults to pick up any new default fields
+        return DEFAULT_TABS_CONFIG.map(def => {
+          const s = saved.find(x => x.id === def.id);
+          if (!s) return {...def};
+          return { ...def, label: s.label ?? def.label, tags: s.tags ?? def.tags, hidden: s.hidden ?? false };
+        }).sort((a, b) => {
+          const ai = saved.findIndex(x => x.id === a.id);
+          const bi = saved.findIndex(x => x.id === b.id);
+          return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
+      } catch { return DEFAULT_TABS_CONFIG.map(t => ({...t})); }
+    }
+
+    let tabsConfig = loadTabsConfig();
+
+    function load(key) { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
+    function save(key, v) {
+      localStorage.setItem(key, JSON.stringify(v));
+      syncToFirestore();
+    }
+
+    // ── Firebase ──────────────────────────────────
+    firebase.initializeApp({
+      apiKey: "AIzaSyBfbHffn2zAGTuDAcxAB8nycEtijkjxitY",
+      authDomain: "quick-notes-9606c.firebaseapp.com",
+      projectId: "quick-notes-9606c",
+      storageBucket: "quick-notes-9606c.firebasestorage.app",
+      messagingSenderId: "242334641570",
+      appId: "1:242334641570:web:9e07d8704b8a8026ebd6fb"
+    });
+    const auth = firebase.auth();
+    const db   = firebase.firestore();
+    let currentUser = null;
+    let syncTimeout = null;
+
+    function signInWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(err => console.error('Sign-in error', err));
+    }
+
+    function signOut() {
+      auth.signOut();
+    }
+
+    function setSyncDot(on) {
+      document.getElementById('sync-dot').classList.toggle('visible', on);
+    }
+
+    function syncToFirestore() {
+      if (!currentUser) return;
+      clearTimeout(syncTimeout);
+      syncTimeout = setTimeout(async () => {
+        setSyncDot(true);
+        try {
+          await db.collection('users').doc(currentUser.uid).collection('data').doc('all').set({
+            notes: load(NOTES_KEY),
+            todos: load(TODOS_KEY),
+            insp:  load(INSP_KEY),
+            oon:   load(OON_KEY),
+            demos: load(DEMOS_KEY),
+            updatedAt: Date.now()
+          });
+        } catch (e) { console.error('Sync error', e); }
+        setSyncDot(false);
+      }, 800);
+    }
+
+    async function loadFromFirestore(uid) {
+      try {
+        const doc = await db.collection('users').doc(uid).collection('data').doc('all').get();
+        if (!doc.exists) return;
+        const d = doc.data();
+        if (d.notes) { notes = d.notes; localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); }
+        if (d.todos) { todos = d.todos; localStorage.setItem(TODOS_KEY, JSON.stringify(todos)); }
+        if (d.insp)  { insps = d.insp;  localStorage.setItem(INSP_KEY,  JSON.stringify(insps)); }
+        if (d.oon)   { oons  = d.oon;   localStorage.setItem(OON_KEY,   JSON.stringify(oons)); }
+        if (d.demos) { demos = d.demos; localStorage.setItem(DEMOS_KEY, JSON.stringify(demos)); }
+        renderAll();
+      } catch (e) { console.error('Load error', e); }
+    }
+
+    function renderAuthSlot(user) {
+      const slot = document.getElementById('auth-slot');
+      if (!user) {
+        slot.innerHTML = `<button class="auth-btn" onclick="signInWithGoogle()">Sign in</button>`;
+      } else {
+        const display = user.photoURL
+          ? `<img class="auth-avatar" src="${user.photoURL}" title="${user.displayName || ''} — click to sign out" onclick="signOut()">`
+          : `<div class="auth-initial" title="${user.displayName || ''} — click to sign out" onclick="signOut()">${(user.displayName||'?')[0].toUpperCase()}</div>`;
+        slot.innerHTML = display;
+      }
+    }
+
+    auth.onAuthStateChanged(async user => {
+      currentUser = user;
+      renderAuthSlot(user);
+      if (user) await loadFromFirestore(user.uid);
+    });
+
+    // ── State ─────────────────────────────────────
+    let notes    = load(NOTES_KEY);
+    let todos    = load(TODOS_KEY);
+    let insps    = load(INSP_KEY);
+    let oons     = load(OON_KEY);
+    let demos    = load(DEMOS_KEY);
+    let demoView = (() => { const v = localStorage.getItem(DVIEW_KEY); return (v && v !== 'table') ? v : 'wide'; })();
+    let inspView = localStorage.getItem(IVIEW_KEY) || 'grid';
+    let completedOpen = false;
+
+    // ── Theme ─────────────────────────────────────
+    function setTheme(t) {
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem(THEME_KEY, t);
+      document.getElementById('theme-meta').content = t === 'dark' ? '#131312' : '#ffffff';
+      document.getElementById('btn-light').classList.toggle('active', t === 'light');
+      document.getElementById('btn-dark').classList.toggle('active',  t === 'dark');
+    }
+    function initTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      const pref  = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      setTheme(saved || pref);
+    }
+
+    // ── Tabs ──────────────────────────────────────
+    const TAB_SECTIONS = { notes: 'section-notes', insp: 'section-insp', oon: 'section-oon', demos: 'section-demos' };
+
+    function renderTabBar() {
+      const nav = document.querySelector('.tab-nav');
+      const visibleTabs = tabsConfig.filter(t => !t.hidden);
+      nav.innerHTML = visibleTabs.map((t, i) =>
+        `<button class="tab-btn${i === 0 ? ' active' : ''}" role="tab" aria-selected="${i === 0}" data-tab="${t.id}" onclick="switchTab('${t.id}')">${esc(t.label)}</button>`
+      ).join('');
+      // Show only sections for visible tabs; hide all first
+      Object.entries(TAB_SECTIONS).forEach(([key, id]) => {
+        document.getElementById(id).classList.toggle('hidden', key !== (visibleTabs[0]?.id ?? 'notes'));
+      });
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        const on = b.dataset.tab === tab;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', String(on));
+      });
+      Object.entries(TAB_SECTIONS).forEach(([key, id]) => {
+        document.getElementById(id).classList.toggle('hidden', key !== tab);
+      });
+    }
+
+    function getRoutingTags(tabId) {
+      return tabsConfig.find(t => t.id === tabId)?.tags ?? [];
+    }
+
+    // ── Utilities ─────────────────────────────────
+    function formatTime(iso) {
+      const d = new Date(iso), now = new Date(), diff = now - d;
+      if (diff < 60000)     return 'just now';
+      if (diff < 3600000)   return `${Math.floor(diff / 60000)}m ago`;
+      if (diff < 86400000)  return `${Math.floor(diff / 3600000)}h ago`;
+      if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function mask(pw) { return pw ? '•'.repeat(Math.min(pw.length, 10)) : ''; }
+
+    function parseTags(str) { return (str || '').match(/[#@][\w-]+/g) || []; }
+
+    const X_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M6 2h4M2 4h12M13 4l-.9 9.1A1 1 0 0 1 11.1 14H4.9a1 1 0 0 1-1-.9L3 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+    const EDIT_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+
+    // ── Smart parser ──────────────────────────────
+    function getCredentialTags() {
+      return new Set(getRoutingTags('demos').map(t => t.toLowerCase()));
+    }
+    function getInspTags() {
+      return getRoutingTags('insp').map(t => t.toLowerCase());
+    }
+
+    function parseInput(raw) {
+      const text  = raw.trim();
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      const tags  = parseTags(text);
+      const credTags = getCredentialTags();
+      const inspTags = getInspTags();
+
+      // 1. Todo: [ ] prefix OR #todo tag
+      const hasCheckbox = lines.some(l => /^\[[ x]?\]/.test(l) || /^-\s*\[[ x]?\]/.test(l));
+      const hasTodoTag  = tags.some(t => t.toLowerCase() === '#todo');
+      if (hasCheckbox || hasTodoTag) {
+        return lines
+          .map(l => l.replace(/^-?\s*\[[ x]?\]\s*/, '').replace(/#todo\b/gi, '').trim())
+          .filter(Boolean)
+          .map(t => ({ type: 'todo', text: t, done: false, createdAt: new Date().toISOString(), id: crypto.randomUUID() }));
+      }
+
+      // 2. Inspiration: configured insp tags
+      const matchedInspTag = tags.find(t => inspTags.includes(t.toLowerCase()));
+      if (matchedInspTag) {
+        const cleanText = text.replace(new RegExp(matchedInspTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+        const sideTags  = tags.filter(t => !inspTags.includes(t.toLowerCase()));
+        return [{ type: 'insp', text: cleanText, tags: sideTags, createdAt: new Date().toISOString(), id: crypto.randomUUID() }];
+      }
+
+      // 3. Demo instance: credential tags
+      if (tags.some(t => credTags.has(t.toLowerCase()))) {
+        const contentLines = lines.filter(l => !credTags.has(l.toLowerCase()));
+        const notesLine = contentLines.find(l => l.startsWith('*'));
+        const notes = notesLine ? notesLine.slice(1).trim() : '';
+        const positional = contentLines.filter(l => !l.startsWith('*'));
+        const [p0 = '', p1 = '', p2 = '', p3 = ''] = positional;
+        let name = p0, url = p1, username = p2, password = p3;
+        if (!name && url) { try { name = new URL(url).hostname; } catch { name = url; } }
+        return [{ type: 'demo', url: url.trim(), username: username.trim(), password: password.trim(), name: name.trim(), notes, tags, createdAt: new Date().toISOString(), id: crypto.randomUUID() }];
+      }
+
+      // 4. 1:1 note: @mention
+      const atMention = tags.find(t => t.startsWith('@'));
+      if (atMention) {
+        const person    = atMention.slice(1);
+        const cleanText = text.replace(new RegExp(atMention.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+        return [{ type: 'oon', person, text: cleanText, tags, createdAt: new Date().toISOString(), id: crypto.randomUUID() }];
+      }
+
+      // 5. Plain note
+      return [{ type: 'note', text, tags, createdAt: new Date().toISOString(), id: crypto.randomUUID() }];
+    }
+
+    // ── Handle add ────────────────────────────────
+    function handleAdd() {
+      const ta  = document.getElementById('compose');
+      const raw = ta.value.trim();
+      if (!raw) return;
+
+      const entries = parseInput(raw);
+      const type    = entries[0].type;
+
+      const newTodoIds = [];
+      entries.forEach(entry => {
+        if (entry.type === 'todo') { todos.push(entry); save(TODOS_KEY, todos); newTodoIds.push(entry.id); }
+        if (entry.type === 'insp') { insps.push(entry); save(INSP_KEY,  insps); }
+        if (entry.type === 'demo') { demos.push(entry); save(DEMOS_KEY, demos); }
+        if (entry.type === 'oon')  { oons.push(entry);  save(OON_KEY,   oons); }
+        if (entry.type === 'note') { notes.push(entry); save(NOTES_KEY, notes); }
+      });
+
+      if (type === 'todo' || type === 'note') {
+        switchTab('notes');
+        // animate only the first new todo (batch adds animate the top item)
+        renderTodos(newTodoIds[0] ?? null);
+        renderNoteCards();
+      }
+      if (type === 'insp')  { switchTab('insp');  renderInsps(); }
+      if (type === 'oon')   { switchTab('oon');   renderOon(); }
+      if (type === 'demo')  { switchTab('demos'); renderDemos(); }
+
+      ta.value = '';
+      ta.style.height = 'auto';
+      syncBackdrop();
+    }
+
+    // ── Compose backdrop (tag highlighting) ───────
+    const backdrop = document.getElementById('compose-backdrop');
+
+    // Ghost hint for #instance mode.
+    // Positional slots: URL, username, password  (+ optional name before URL if 4 lines)
+    // * prefix = notes field (optional, any position)
+    // We always show the minimal 3-slot template. Once user types a 4th positional
+    // line (without *), we can't distinguish name vs extra, so stop hinting.
+    function instanceGhostHint(val) {
+      const credTags = getCredentialTags();
+      const lines = val.split('\n');
+      const content = lines.filter(l => {
+        const t = l.trim();
+        return t && !credTags.has(t.toLowerCase());
+      });
+      const hasNotes    = content.some(l => l.trim().startsWith('*'));
+      const positional  = content.filter(l => !l.trim().startsWith('*'));
+      const filled      = positional.length;
+      // Minimal slot labels
+      const slots = ['Name (optional)', 'URL', 'username', 'password'];
+      const remaining = slots.slice(filled);
+      const parts = remaining.map(l => `<span class="ghost-line">${l}</span>`);
+      if (!hasNotes) parts.push(`<span class="ghost-line">* notes (optional)</span>`);
+      return parts.join('\n');
+    }
+
+    function syncBackdrop() {
+      const val = compose.value;
+      const highlighted = esc(val).replace(/(#\w+|@\w+)/g, '<span class="tag-highlight">$1</span>');
+      const credTags2 = getCredentialTags();
+      const isInstance = val.split('\n').some(l => credTags2.has(l.trim().toLowerCase()));
+      let ghost = '';
+      if (isInstance) {
+        const hint = instanceGhostHint(val);
+        if (hint) ghost = (val.endsWith('\n') ? '' : '\n') + hint;
+      }
+      backdrop.innerHTML = highlighted + ghost;
+      backdrop.scrollTop = compose.scrollTop;
+    }
+
+    // ── Tag autocomplete ──────────────────────────
+    const tagSugg = document.getElementById('tag-suggestions');
+    let suggIdx = -1;
+
+    function tagPool() {
+      const seen = new Set();
+      const result = [];
+      const push = t => { if (!seen.has(t)) { seen.add(t); result.push(t); } };
+      ['#todo'].forEach(push);
+      tabsConfig.filter(t => !t.fixedTags && !t.hidden).forEach(t => t.tags.forEach(push));
+      [...notes, ...todos, ...insps, ...oons].forEach(item =>
+        (item.text.match(/#\w+/g) || []).forEach(push)
+      );
+      return result;
+    }
+
+    function tagPartial() {
+      const val = compose.value;
+      const pos = compose.selectionStart;
+      const m = val.slice(0, pos).match(/#(\w*)$/);
+      return m ? { partial: m[1], start: pos - m[0].length } : null;
+    }
+
+    function caretCoords(el) {
+      const style = window.getComputedStyle(el);
+      const mirror = document.createElement('div');
+      ['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing',
+       'paddingTop','paddingRight','paddingBottom','paddingLeft',
+       'borderTopWidth','borderLeftWidth','boxSizing','wordBreak'].forEach(p => {
+        mirror.style[p] = style[p];
+      });
+      mirror.style.cssText += ';position:absolute;visibility:hidden;top:0;left:0;white-space:pre-wrap;overflow:hidden;pointer-events:none';
+      mirror.style.width = el.clientWidth + 'px';
+      const pos = el.selectionStart;
+      mirror.appendChild(document.createTextNode(el.value.slice(0, pos)));
+      const marker = document.createElement('span');
+      marker.textContent = '​';
+      mirror.appendChild(marker);
+      mirror.appendChild(document.createTextNode(el.value.slice(pos)));
+      el.parentElement.appendChild(mirror);
+      const eRect = el.getBoundingClientRect();
+      const mRect = marker.getBoundingClientRect();
+      el.parentElement.removeChild(mirror);
+      return { x: mRect.left - eRect.left, y: mRect.bottom - eRect.top - el.scrollTop };
+    }
+
+    function showTagSugg() {
+      const hit = tagPartial();
+      if (!hit) { hideTagSugg(); return; }
+      const matches = tagPool().filter(t =>
+        t.slice(1).toLowerCase().startsWith(hit.partial.toLowerCase()) && t.slice(1) !== hit.partial
+      ).slice(0, 6);
+      if (!matches.length) { hideTagSugg(); return; }
+      suggIdx = -1;
+      tagSugg.innerHTML = matches.map(t =>
+        `<div class="tag-sugg-item" data-tag="${t}" onmousedown="applyTagSugg('${t}')">${t}</div>`
+      ).join('');
+      const { x, y } = caretCoords(compose);
+      tagSugg.style.left = Math.max(0, x) + 'px';
+      tagSugg.style.top  = (y + 4) + 'px';
+      tagSugg.classList.add('visible');
+    }
+
+    function hideTagSugg() {
+      tagSugg.classList.remove('visible');
+      tagSugg.innerHTML = '';
+      suggIdx = -1;
+    }
+
+    function applyTagSugg(tag) {
+      const hit = tagPartial();
+      if (!hit) return;
+      const val = compose.value;
+      const pos = compose.selectionStart;
+      compose.value = val.slice(0, hit.start) + tag + ' ' + val.slice(pos);
+      compose.selectionStart = compose.selectionEnd = hit.start + tag.length + 1;
+      hideTagSugg();
+      syncBackdrop();
+      compose.focus();
+    }
+
+    function moveSugg(dir) {
+      const items = tagSugg.querySelectorAll('.tag-sugg-item');
+      if (!items.length) return;
+      items[suggIdx]?.classList.remove('active');
+      suggIdx = (suggIdx + dir + items.length) % items.length;
+      items[suggIdx].classList.add('active');
+    }
+
+    // ── Textarea ──────────────────────────────────
+    const compose = document.getElementById('compose');
+
+    compose.addEventListener('input', () => {
+      compose.style.height = 'auto';
+      compose.style.height = Math.min(compose.scrollHeight, 320) + 'px';
+
+      const val = compose.value;
+      const pos = compose.selectionStart;
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      const beforeCursor = val.slice(lineStart, pos);
+
+      // `- ` at line start → `• `
+      if (beforeCursor === '- ') {
+        compose.value = val.slice(0, lineStart) + '• ' + val.slice(pos);
+        compose.selectionStart = compose.selectionEnd = lineStart + 2;
+        syncBackdrop(); showTagSugg();
+        return;
+      }
+
+      // `[]` → `[ ] `
+      if (val.slice(pos - 2, pos) === '[]') {
+        compose.value = val.slice(0, pos - 2) + '[ ] ' + val.slice(pos);
+        compose.selectionStart = compose.selectionEnd = pos + 2;
+      }
+
+      syncBackdrop();
+      showTagSugg();
+    });
+
+    compose.addEventListener('keydown', e => {
+      const val = compose.value;
+      const pos = compose.selectionStart;
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      const lineEnd   = val.indexOf('\n', pos);
+      const line      = val.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+
+      const indentMatch = line.match(/^( *)/);
+      const indent      = indentMatch ? indentMatch[1] : '';
+      const trimmed     = line.slice(indent.length);
+      const bulletMatch = trimmed.match(/^• /);
+      const todoMatch   = trimmed.match(/^\[ \] /);
+      const numMatch    = trimmed.match(/^(\d+)\. /);
+      const listPrefix  = todoMatch ? indent + '[ ] '
+                        : numMatch  ? indent + `${parseInt(numMatch[1]) + 1}. `
+                        : bulletMatch ? indent + '• ' : null;
+      const prefixLen   = indent.length + (todoMatch ? 4 : numMatch ? numMatch[0].length : bulletMatch ? 2 : 0);
+
+      // Tag suggestion keyboard nav
+      if (!tagSugg.classList.contains('hidden')) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); moveSugg(1); return; }
+        if (e.key === 'ArrowUp')   { e.preventDefault(); moveSugg(-1); return; }
+        if (e.key === 'Escape')    { hideTagSugg(); return; }
+        if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+          const active = tagSugg.querySelector('.tag-sugg-item.active')
+                      || tagSugg.querySelector('.tag-sugg-item');
+          if (active) { e.preventDefault(); applyTagSugg(active.dataset.tag); return; }
+        }
+      }
+
+      if (e.key === 'Enter' && !e.shiftKey) {
+        if (listPrefix) {
+          e.preventDefault();
+          const afterPrefix = line.slice(prefixLen);
+          if (!afterPrefix.trim()) {
+            // empty prefix line → exit list; submit if nothing else remains
+            const newVal = val.slice(0, lineStart) + val.slice(lineStart + prefixLen);
+            compose.value = newVal;
+            compose.selectionStart = compose.selectionEnd = lineStart;
+            if (!newVal.trim()) handleAdd();
+          } else {
+            // continue list
+            const ins = '\n' + listPrefix;
+            compose.value = val.slice(0, pos) + ins + val.slice(pos);
+            compose.selectionStart = compose.selectionEnd = pos + ins.length;
+          }
+          compose.dispatchEvent(new Event('input'));
+          return;
+        }
+        e.preventDefault();
+        handleAdd();
+      }
+
+      // Tab / Shift+Tab indent on list lines
+      if (e.key === 'Tab' && listPrefix) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          const spaces = line.match(/^( +)/)?.[1] ?? '';
+          const remove = Math.min(spaces.length, 2);
+          if (remove > 0) {
+            compose.value = val.slice(0, lineStart) + line.slice(remove) + val.slice(lineStart + line.length);
+            compose.selectionStart = compose.selectionEnd = pos - remove;
+          }
+        } else {
+          compose.value = val.slice(0, lineStart) + '  ' + val.slice(lineStart);
+          compose.selectionStart = compose.selectionEnd = pos + 2;
+        }
+        compose.dispatchEvent(new Event('input'));
+      }
+
+      // Backspace on a line that is only a list prefix → wipe the prefix
+      if (e.key === 'Backspace' && listPrefix && !line.slice(prefixLen).trim()
+          && pos === lineStart + prefixLen && compose.selectionStart === compose.selectionEnd) {
+        e.preventDefault();
+        const newVal = val.slice(0, lineStart) + val.slice(lineStart + prefixLen);
+        compose.value = newVal;
+        compose.selectionStart = compose.selectionEnd = lineStart;
+        compose.dispatchEvent(new Event('input'));
+      }
+    });
+
+    compose.addEventListener('blur', () => setTimeout(hideTagSugg, 100));
+    compose.addEventListener('scroll', () => { backdrop.scrollTop = compose.scrollTop; });
+
+    // ──────────────────────────────────────────────
+    //  NOTES + TODOS
+    // ──────────────────────────────────────────────
+    function _syncEmptyState() {
+      const notesSplit = document.getElementById('notes-split');
+      const notesEmpty = document.getElementById('notes-empty');
+      const bothEmpty  = todos.length === 0 && notes.length === 0;
+      notesSplit.classList.toggle('hidden', bothEmpty);
+      if (bothEmpty) {
+        notesEmpty.classList.remove('hidden');
+        notesEmpty.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">✦</div>
+            <p>Nothing here yet</p>
+            <span>Type a note, or <span class="hint-tag">[ ] task</span> for todos</span>
+          </div>`;
+      } else {
+        notesEmpty.classList.add('hidden');
+        notesEmpty.innerHTML = '';
+      }
+    }
+
+    function renderTodos(newId = null) {
+      _syncEmptyState();
+      const todosSection = document.getElementById('todos-section');
+      const active    = todos.filter(t => !t.done);
+      const completed = todos.filter(t => t.done);
+      if (!todos.length) {
+        todosSection.innerHTML = '';
+      } else {
+        todosSection.innerHTML = `
+          <div class="todos-card">
+            <div id="active-todos">${active.map(t => renderTodoItem(t, newId)).join('')}</div>
+            ${completed.length ? `
+              <button class="completed-toggle" onclick="toggleCompleted()" aria-expanded="${completedOpen}">
+                <svg class="chevron ${completedOpen ? 'open' : ''}" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Completed (${completed.length})
+              </button>
+              <div class="completed-list ${completedOpen ? '' : 'collapsed'}">
+                ${completed.map(t => renderTodoItem(t, newId)).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+    }
+
+    function renderNoteCards() {
+      _syncEmptyState();
+      const notesList = document.getElementById('notes-list');
+      notesList.innerHTML = notes.slice().reverse().map(n => `
+        <div class="note-card" data-id="${n.id}">
+
+          <div class="note-text" onclick="startEditNote('${n.id}')">${esc(n.text)}</div>
+          <div class="note-meta">
+            <button class="delete-btn" onclick="deleteNote('${n.id}')" aria-label="Delete">${X_ICON}</button>
+            <span class="note-time">${formatTime(n.createdAt)}</span>
+          </div>
+        </div>`).join('');
+    }
+
+    function renderNotes() {
+      renderTodos();
+      renderNoteCards();
+    }
+
+    function renderTodoItem(t, newId = null) {
+      const isNew = t.id === newId ? ' new-item' : '';
+      return `
+        <div class="todo-item ${t.done ? 'done' : ''}${isNew}" data-id="${t.id}">
+          <input type="checkbox" class="todo-checkbox" ${t.done ? 'checked' : ''}
+            onchange="toggleTodo('${t.id}')" aria-label="Mark complete" />
+          <span class="todo-text" onclick="startEditTodo('${t.id}')">${esc(t.text)}</span>
+          <span class="todo-time">${formatTime(t.createdAt)}</span>
+          <button class="todo-delete" onclick="deleteTodo('${t.id}')" aria-label="Delete">${X_ICON}</button>
+        </div>`;
+    }
+
+    function toggleCompleted() {
+      completedOpen = !completedOpen;
+      renderTodos();
+    }
+
+    function toggleTodo(id) {
+      const t = todos.find(t => t.id === id);
+      if (!t) return;
+      t.done = !t.done;
+      save(TODOS_KEY, todos);
+      renderTodos();
+    }
+
+    function deleteTodo(id) {
+      const el = document.querySelector(`.todo-item[data-id="${id}"]`);
+      if (!el) return;
+      el.classList.add('removing');
+      el.addEventListener('animationend', () => {
+        todos = todos.filter(t => t.id !== id);
+        save(TODOS_KEY, todos);
+        renderTodos();
+      }, { once: true });
+    }
+
+    function deleteNote(id) {
+      const el = document.querySelector(`.note-card[data-id="${id}"]`);
+      if (!el) return;
+      el.classList.add('removing');
+      el.addEventListener('animationend', () => {
+        notes = notes.filter(n => n.id !== id);
+        save(NOTES_KEY, notes);
+        renderNoteCards();
+      }, { once: true });
+    }
+
+    // ── Inline editing ────────────────────────────
+
+    function startEditTodo(id) {
+      const item = document.querySelector(`.todo-item[data-id="${id}"]`);
+      if (!item) return;
+      const span = item.querySelector('.todo-text');
+      if (!span) return;
+
+      const original = span.textContent;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'todo-edit-input';
+      input.value = original;
+      span.replaceWith(input);
+      input.focus();
+
+      let cancelled = false;
+
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') {
+          cancelled = true;
+          renderTodos();
+        }
+      });
+
+      input.addEventListener('blur', () => {
+        if (cancelled) return;
+        const val = input.value.trim();
+        if (val && val !== original) {
+          const t = todos.find(t => t.id === id);
+          if (t) { t.text = val; save(TODOS_KEY, todos); }
+        }
+        renderTodos();
+      });
+    }
+
+    function startEditNote(id) {
+      const card = document.querySelector(`.note-card[data-id="${id}"]`);
+      if (!card) return;
+      const div = card.querySelector('.note-text');
+      if (!div) return;
+
+      const original = div.textContent;
+      const ta = document.createElement('textarea');
+      ta.className = 'note-edit-textarea';
+      ta.value = original;
+      div.replaceWith(ta);
+      card.classList.add('editing');
+
+      const resize = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+      resize();
+      ta.addEventListener('input', resize);
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+
+      let cancelled = false;
+
+      ta.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ta.blur(); }
+        if (e.key === 'Escape') {
+          cancelled = true;
+          renderNoteCards();
+        }
+      });
+
+      ta.addEventListener('blur', () => {
+        if (cancelled) return;
+        const val = ta.value.trim();
+        if (val && val !== original) {
+          const n = notes.find(n => n.id === id);
+          if (n) { n.text = val; save(NOTES_KEY, notes); }
+        }
+        renderNoteCards();
+      });
+    }
+
+    // ──────────────────────────────────────────────
+    //  INSPIRATION
+    // ──────────────────────────────────────────────
+    function setInspView(v) {
+      inspView = v;
+      localStorage.setItem(IVIEW_KEY, v);
+      document.getElementById('btn-insp-grid').classList.toggle('active', v === 'grid');
+      document.getElementById('btn-insp-doc').classList.toggle('active',  v === 'doc');
+      renderInsps();
+    }
+
+    function renderInsps() {
+      const c = document.getElementById('insp-container');
+      if (!insps.length) {
+        c.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">✦</div>
+            <p>No inspiration yet</p>
+            <span>Add with <span class="hint-tag">#insp</span> · side tags for categories</span>
+          </div>`;
+        return;
+      }
+      const sorted = insps.slice().reverse();
+      c.innerHTML = inspView === 'grid'
+        ? `<div class="insp-grid">${sorted.map(renderInspCard).join('')}</div>`
+        : `<div class="insp-doc">${sorted.map(renderInspDocRow).join('')}</div>`;
+    }
+
+    function renderInspCard(p) {
+      const tags  = Array.isArray(p.tags) ? p.tags : [];
+      const title = p.text.split('\n')[0].slice(0, 80);
+      return `
+        <div class="insp-card" data-id="${p.id}">
+          <div class="insp-card-header">
+            <div class="insp-card-title">${esc(title)}</div>
+            <button class="insp-delete-btn" onclick="deleteInsp('${p.id}')" aria-label="Delete">${X_ICON}</button>
+          </div>
+          <div class="insp-card-body">${esc(p.text)}</div>
+          <div class="insp-card-footer">
+            <div class="insp-tags">${tags.map(t => `<span class="insp-tag">${esc(t)}</span>`).join('')}</div>
+            <button class="action-btn" onclick="copyInsp(this,'${p.id}')">Copy</button>
+          </div>
+        </div>`;
+    }
+
+    function renderInspDocRow(p) {
+      const tags = Array.isArray(p.tags) ? p.tags : [];
+      return `
+        <div class="insp-doc-row" data-id="${p.id}">
+          <div class="insp-doc-text">${esc(p.text)}</div>
+          <div class="insp-doc-right">
+            <button class="insp-doc-delete" onclick="deleteInsp('${p.id}')" aria-label="Delete">${X_ICON}</button>
+            <button class="action-btn" onclick="copyInsp(this,'${p.id}')">Copy</button>
+            ${tags.length ? `<div class="insp-tags">${tags.map(t => `<span class="insp-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+            <span class="insp-time">${formatTime(p.createdAt)}</span>
+          </div>
+        </div>`;
+    }
+
+    function copyInsp(btn, id) {
+      const p = insps.find(p => p.id === id);
+      if (p) copyText(btn, p.text);
+    }
+
+    function deleteInsp(id) {
+      const el = document.querySelector(`.insp-card[data-id="${id}"], .insp-doc-row[data-id="${id}"]`);
+      if (!el) return;
+      el.classList.add('removing');
+      el.addEventListener('animationend', () => {
+        insps = insps.filter(p => p.id !== id);
+        save(INSP_KEY, insps);
+        renderInsps();
+      }, { once: true });
+    }
+
+    // ──────────────────────────────────────────────
+    //  1:1 NOTES
+    // ──────────────────────────────────────────────
+    function oonGroups() {
+      const groups = {};
+      oons.slice().reverse().forEach(o => {
+        if (!groups[o.person]) groups[o.person] = [];
+        groups[o.person].push(o);
+      });
+      return groups;
+    }
+
+    function personInitials(name) {
+      return name.split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').slice(0, 2).join('');
+    }
+
+    function renderOon() {
+      const grid = document.getElementById('oon-grid');
+      if (!oons.length) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="empty-icon">✦</div>
+            <p>No 1:1 notes yet</p>
+            <span>Use <span class="hint-tag">@name</span> to tag a topic for someone</span>
+          </div>`;
+        return;
+      }
+
+      const groups = oonGroups();
+      grid.innerHTML = Object.entries(groups).map(([person, items]) => `
+        <div class="person-card" onclick="openOonModal('${esc(person)}')">
+          <div class="person-card-header">
+            <div class="person-avatar">${esc(personInitials(person))}</div>
+            <div>
+              <div class="person-name">@${esc(person)}</div>
+              <div class="person-note-count">${items.length} note${items.length !== 1 ? 's' : ''}</div>
+            </div>
+            <button class="person-copy-btn" onclick="event.stopPropagation();copyAllOon(this,'${esc(person)}')">Copy all</button>
+          </div>
+          <div class="person-notes-preview">
+            ${items.map(o => `<div class="person-preview-line">${esc(o.text)}</div>`).join('')}
+            <div class="person-preview-fade"></div>
+          </div>
+        </div>`).join('');
+    }
+
+    function copyAllOon(btn, person) {
+      const items = oons.filter(o => o.person === person);
+      const text  = items.map(o => `• ${o.text}`).join('\n');
+      copyText(btn, text);
+    }
+
+    // ── Oon modal ──
+    let oonModalPerson = null;
+
+    function renderOonModal() {
+      const person = oonModalPerson;
+      const items  = oons.filter(o => o.person === person).reverse();
+      document.getElementById('oon-modal-meta').textContent =
+        items.length + ' note' + (items.length !== 1 ? 's' : '');
+      document.getElementById('oon-modal-body').innerHTML = items.map(o => `
+        <div class="oon-item" data-id="${o.id}">
+          <span class="oon-bullet">●</span>
+          <span class="oon-text" onclick="startOonEdit(this)">${esc(o.text)}</span>
+          <span class="oon-time">${formatTime(o.createdAt)}</span>
+          <button class="oon-delete" onclick="deleteOon('${o.id}')" aria-label="Delete">${X_ICON}</button>
+        </div>`).join('');
+    }
+
+    function openOonModal(person) {
+      oonModalPerson = person;
+      document.getElementById('oon-modal-avatar').textContent = personInitials(person);
+      document.getElementById('oon-modal-name').textContent   = '@' + person;
+      renderOonModal();
+      document.getElementById('oon-modal-overlay').classList.add('open');
+      document.getElementById('oon-modal-add-input').value = '';
+    }
+
+    function closeOonModal() {
+      document.getElementById('oon-modal-overlay').classList.remove('open');
+      oonModalPerson = null;
+      renderOon();
+    }
+
+    function deleteOon(id) {
+      oons = oons.filter(o => o.id !== id);
+      save(OON_KEY, oons);
+      if (oonModalPerson) renderOonModal(); else renderOon();
+    }
+
+    function startOonEdit(el) {
+      const noteEl = el.closest('.oon-item');
+      const id     = noteEl.dataset.id;
+      const note   = oons.find(o => o.id === id);
+      if (!note) return;
+      const input  = document.createElement('textarea');
+      input.className = 'oon-edit-input';
+      input.value     = note.text;
+      input.rows      = 1;
+      el.replaceWith(input);
+      input.focus();
+      const resize = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
+      input.addEventListener('input', resize);
+      resize();
+      let cancelled = false;
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { cancelled = true; renderOonModal(); }
+      });
+      input.addEventListener('blur', () => {
+        if (cancelled) return;
+        const val = input.value.trim();
+        if (val) { note.text = val; save(OON_KEY, oons); }
+        renderOonModal();
+      });
+    }
+
+    function addOonFromModal() {
+      const input = document.getElementById('oon-modal-add-input');
+      const text  = input.value.trim();
+      if (!text) return;
+      const entry = { type: 'oon', person: oonModalPerson, text, tags: [], createdAt: new Date().toISOString(), id: crypto.randomUUID() };
+      oons.push(entry);
+      save(OON_KEY, oons);
+      input.value = '';
+      renderOonModal();
+      document.getElementById('oon-modal-body').scrollTop = 0;
+    }
+
+    function copyAllOonModal() {
+      const btn   = document.getElementById('oon-modal-copy-btn');
+      const items = oons.filter(o => o.person === oonModalPerson);
+      const text  = items.map(o => `• ${o.text}`).join('\n');
+      copyText(btn, text);
+    }
+
+    document.getElementById('oon-modal-add-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addOonFromModal();
+    });
+    document.getElementById('oon-modal-overlay').addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeOonModal();
+    });
+    document.getElementById('demo-edit-overlay').addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeDemoEdit();
+    });
+    document.getElementById('de-notes').addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveDemoEdit();
+    });
+
+    // ──────────────────────────────────────────────
+    //  INSTANCES
+    // ──────────────────────────────────────────────
+    const DSORT_KEY = 'demo-sort';
+    const DDIR_KEY  = 'demo-sort-dir';
+
+    let demoSort    = localStorage.getItem(DSORT_KEY) || 'time';
+    let demoSortDir = localStorage.getItem(DDIR_KEY)  || 'desc';
+
+    function urlGroupKey(d) {
+      try { const p = new URL(d.url).hostname.split('.'); return p.slice(-2).join('.'); }
+      catch { return d.url; }
+    }
+
+    function sortedDemos() {
+      return demos.slice().sort((a, b) => {
+        let cmp = 0;
+        if (demoSort === 'time') cmp = new Date(a.createdAt) - new Date(b.createdAt);
+        else if (demoSort === 'name') cmp = (a.name || '').localeCompare(b.name || '');
+        else { cmp = urlGroupKey(a).localeCompare(urlGroupKey(b)); if (cmp === 0) cmp = (a.name || '').localeCompare(b.name || ''); }
+        return demoSortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+
+    function sortDirLabel() {
+      if (demoSort === 'time') return demoSortDir === 'desc' ? '↓ Newest' : '↑ Oldest';
+      return demoSortDir === 'asc' ? '↑ A–Z' : '↓ Z–A';
+    }
+
+    function updateSortUI() {
+      const btn = document.getElementById('demo-sort-dir');
+      const sel = document.getElementById('demo-sort-select');
+      if (btn) btn.textContent = sortDirLabel();
+      if (sel) sel.value = demoSort;
+    }
+
+    function setSortBy(by) {
+      demoSort = by;
+      demoSortDir = by === 'time' ? 'desc' : 'asc';
+      localStorage.setItem(DSORT_KEY, demoSort);
+      localStorage.setItem(DDIR_KEY, demoSortDir);
+      renderDemos();
+    }
+
+    function toggleSortDir() {
+      demoSortDir = demoSortDir === 'asc' ? 'desc' : 'asc';
+      localStorage.setItem(DDIR_KEY, demoSortDir);
+      renderDemos();
+    }
+
+    function setDemoView(v) {
+      demoView = v;
+      localStorage.setItem(DVIEW_KEY, v);
+      ['grid','wide'].forEach(k =>
+        document.getElementById('btn-demo-' + k)?.classList.toggle('active', v === k)
+      );
+      renderDemos();
+    }
+
+    function renderDemos() {
+      updateSortUI();
+      const c = document.getElementById('demos-container');
+      if (!demos.length) {
+        c.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">✦</div>
+            <p>No instances yet</p>
+            <span>Paste a URL with <span class="hint-tag">#instance</span></span>
+          </div>`;
+        return;
+      }
+      const sorted = sortedDemos();
+      if (demoView === 'wide') {
+        c.innerHTML = `<div class="demo-wide">${sorted.map(renderDemoWideCard).join('')}</div>`;
+      } else {
+        c.innerHTML = `<div class="demo-grid">${sorted.map(renderDemoGridCard).join('')}</div>`;
+      }
+    }
+
+    function _demoDomain(d) { try { return new URL(d.url).hostname; } catch { return d.url; } }
+
+    function renderDemoGridCard(d) {
+      const hasPw = !!d.password, hasUsr = !!d.username;
+      const safeUrl = esc(d.url), safePw = esc(d.password), domain = esc(_demoDomain(d));
+      return `
+        <div class="demo-card" data-id="${d.id}">
+          <div class="demo-card-header">
+            <div class="demo-card-title-row">
+              <div class="demo-card-name">${esc(d.name)}</div>
+              <div class="demo-card-time-sub">${formatTime(d.createdAt)}</div>
+              <button class="demo-edit-btn" onclick="openDemoEdit('${d.id}')" aria-label="Edit" title="Edit">${EDIT_ICON}</button>
+            </div>
+            <button class="demo-delete-btn" onclick="deleteDemo('${d.id}')" aria-label="Delete">${X_ICON}</button>
+          </div>
+          <div class="demo-field">
+            <span class="demo-field-label">URL</span>
+            <a class="demo-field-value is-url" href="${safeUrl}" target="_blank" rel="noopener">${domain}</a>
+            <button class="action-btn" onclick="copyText(this,'${safeUrl}')">Copy</button>
+          </div>
+          ${(hasUsr || hasPw) ? `<div class="demo-field">
+            <span class="demo-field-label">Pass</span>
+            <span class="demo-field-value is-masked" id="demo-pw-${d.id}" data-pw="${safePw}" data-usr="${esc(d.username)}" data-visible="false">${hasUsr ? esc(d.username) + ' / ' : ''}${hasPw ? mask(d.password) : ''}</span>
+            ${hasPw ? `<button class="action-btn" id="demo-pwbtn-${d.id}" onclick="toggleDemoPw('${d.id}')">Show</button>` : ''}
+            ${hasPw ? `<button class="action-btn" onclick="copyText(this,'${safePw}')">Copy</button>` : ''}
+          </div>` : ''}
+          ${d.notes ? `<div class="demo-notes-text">${esc(d.notes)}</div>` : ''}
+        </div>`;
+    }
+
+    function renderDemoWideCard(d) {
+      const hasPw = !!d.password, hasUsr = !!d.username;
+      const safeUrl = esc(d.url), safePw = esc(d.password), domain = esc(_demoDomain(d));
+      return `
+        <div class="demo-wide-card" data-id="${d.id}">
+          <div class="demo-wide-col1">
+            <div class="demo-wide-name">${esc(d.name)}</div>
+            <div class="demo-wide-time">${formatTime(d.createdAt)}</div>
+          </div>
+          <div class="demo-wide-col3">
+            <div class="demo-wide-row">
+              <span class="demo-wide-lbl">URL</span>
+              <span class="demo-wide-val is-url">${domain}</span>
+              <button class="demo-wide-copy" onclick="copyText(this,'${safeUrl}')">Copy</button>
+            </div>
+            ${hasUsr ? `<div class="demo-wide-row">
+              <span class="demo-wide-lbl">User</span>
+              <span class="demo-wide-val">${esc(d.username)}</span>
+              <button class="demo-wide-copy" onclick="copyText(this,'${esc(d.username)}')">Copy</button>
+            </div>` : ''}
+            ${hasPw ? `<div class="demo-wide-row">
+              <span class="demo-wide-lbl">Pass</span>
+              <span class="demo-wide-val is-masked" id="demo-pw-${d.id}" data-pw="${safePw}" data-visible="false">${mask(d.password)}</span>
+              <button class="demo-wide-show" id="demo-pwbtn-${d.id}" onclick="toggleDemoPw('${d.id}')">Show</button>
+              <button class="demo-wide-copy" onclick="copyText(this,'${safePw}')">Copy</button>
+            </div>` : ''}
+          </div>
+          <div class="demo-wide-col2">
+            ${d.notes ? `<div class="demo-wide-notes" title="${esc(d.notes)}">${esc(d.notes)}</div>` : ''}
+          </div>
+          <div class="demo-wide-actions">
+            <button class="demo-edit-btn" onclick="openDemoEdit('${d.id}')" aria-label="Edit" title="Edit">${EDIT_ICON}</button>
+            <button class="demo-wide-del" onclick="deleteDemo('${d.id}')" aria-label="Delete">${X_ICON}</button>
+          </div>
+        </div>`;
+    }
+
+    function renderDemoTableRow(d) {
+      const hasPw = !!d.password, hasUsr = !!d.username;
+      const safeUrl = esc(d.url), safePw = esc(d.password), domain = esc(_demoDomain(d));
+      return `
+        <div class="demo-tr" data-id="${d.id}">
+          <div class="demo-td-name">
+            <div class="demo-td-main">${esc(d.name)}</div>
+            <div class="demo-td-sub">${formatTime(d.createdAt)}</div>
+          </div>
+          <div class="demo-td-notes">
+            <div class="demo-td-notes-text" title="${esc(d.notes || '')}">${esc(d.notes || '')}</div>
+          </div>
+          <div class="demo-td-cell">
+            <span class="demo-td-val is-url">${domain}</span>
+            <button class="demo-td-copy" onclick="copyText(this,'${safeUrl}')">Copy</button>
+          </div>
+          <div class="demo-td-cell">
+            ${hasUsr
+              ? `<span class="demo-td-val">${esc(d.username)}</span><button class="demo-td-copy" onclick="copyText(this,'${esc(d.username)}')">Copy</button>`
+              : `<span style="color:var(--border);font-size:12px">—</span>`}
+          </div>
+          <div class="demo-td-cell">
+            ${hasPw
+              ? `<span class="demo-td-val is-masked" id="demo-pw-${d.id}" data-pw="${safePw}" data-visible="false">${mask(d.password)}</span>
+                 <button class="demo-td-show" id="demo-pwbtn-${d.id}" onclick="toggleDemoPw('${d.id}')">Show</button>
+                 <button class="demo-td-copy" onclick="copyText(this,'${safePw}')">Copy</button>`
+              : `<span style="color:var(--border);font-size:12px">—</span>`}
+          </div>
+          <div class="demo-td-actions">
+            <button class="demo-edit-btn" onclick="openDemoEdit('${d.id}')" aria-label="Edit" title="Edit">${EDIT_ICON}</button>
+            <button class="demo-td-del" onclick="deleteDemo('${d.id}')" aria-label="Delete">${X_ICON}</button>
+          </div>
+        </div>`;
+    }
+
+    function toggleDemoPw(id) {
+      const field = document.getElementById('demo-pw-' + id);
+      const btn   = document.getElementById('demo-pwbtn-' + id);
+      if (!field || !btn) return;
+      const visible = field.dataset.visible === 'true';
+      const usr = field.dataset.usr || '';
+      const pw  = field.dataset.pw  || '';
+      const prefix = usr ? usr + ' / ' : '';
+      field.textContent     = visible ? prefix + mask(pw) : prefix + pw;
+      field.dataset.visible = visible ? 'false' : 'true';
+      field.classList.toggle('is-masked', visible);
+      btn.textContent = visible ? 'Show' : 'Hide';
+    }
+
+    let _demoEditId = null;
+    function openDemoEdit(id) {
+      const d = demos.find(x => x.id === id);
+      if (!d) return;
+      _demoEditId = id;
+      document.getElementById('de-name').value     = d.name     || '';
+      document.getElementById('de-url').value      = d.url      || '';
+      document.getElementById('de-username').value = d.username || '';
+      document.getElementById('de-password').value = d.password || '';
+      document.getElementById('de-notes').value    = d.notes    || '';
+      document.getElementById('demo-edit-overlay').classList.add('open');
+      document.getElementById('de-name').focus();
+    }
+    function closeDemoEdit() {
+      document.getElementById('demo-edit-overlay').classList.remove('open');
+      _demoEditId = null;
+    }
+    function saveDemoEdit() {
+      if (!_demoEditId) return;
+      const idx = demos.findIndex(x => x.id === _demoEditId);
+      if (idx === -1) return;
+      demos[idx] = {
+        ...demos[idx],
+        name:     document.getElementById('de-name').value.trim()     || demos[idx].name,
+        url:      document.getElementById('de-url').value.trim()      || demos[idx].url,
+        username: document.getElementById('de-username').value.trim(),
+        password: document.getElementById('de-password').value,
+        notes:    document.getElementById('de-notes').value.trim(),
+      };
+      save(DEMOS_KEY, demos);
+      closeDemoEdit();
+      renderDemos();
+    }
+
+    function deleteDemo(id) {
+      const el = document.querySelector(`.demo-card[data-id="${id}"], .demo-wide-card[data-id="${id}"], .demo-tr[data-id="${id}"]`);
+      if (!el) return;
+      el.classList.add('removing');
+      el.addEventListener('animationend', () => {
+        demos = demos.filter(d => d.id !== id);
+        save(DEMOS_KEY, demos);
+        renderDemos();
+      }, { once: true });
+    }
+
+    // ── Copy with feedback ────────────────────────
+    function copyText(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+      }).catch(() => {});
+    }
+
+
+
+    // ── Customize modal ───────────────────────────
+    let _custDraft = [];
+    let _dragSrc = null;
+
+    const EYE_ON  = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/></svg>`;
+    const EYE_OFF = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8s2.5-5 7-5 5.3 2.9 6.5 4.5M15 8c-.4.7-1 1.5-1.8 2.2M2 2l12 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+
+    function openCustomize() {
+      _custDraft = tabsConfig.map(t => ({...t, tags: [...t.tags]}));
+      renderCustomizeRows();
+      document.getElementById('customize-overlay').classList.add('open');
+    }
+
+    function closeCustomize() {
+      document.getElementById('customize-overlay').classList.remove('open');
+    }
+
+    function allCustTags() {
+      const result = [];
+      _custDraft.forEach(t => t.tags.forEach(tag => {
+        if (!result.includes(tag)) result.push(tag);
+      }));
+      return result;
+    }
+
+    function renderCustomizeRows() {
+      const container = document.getElementById('customize-rows');
+      container.innerHTML = '';
+      _custDraft.forEach((tab, i) => {
+        const row = document.createElement('div');
+        row.className = 'customize-row';
+        row.dataset.idx = i;
+        row.draggable = true;
+
+        const tagsVal = tab.fixedTags ? (tab.id === 'oon' ? '@name (fixed)' : '—') : tab.tags.join(', ');
+
+        row.innerHTML = `
+          <div class="drag-handle" title="Drag to reorder">⠿</div>
+          <input class="cust-input" type="text" value="${esc(tab.label)}" placeholder="Tab name"
+            data-idx="${i}" data-field="label" oninput="onCustInput(this)">
+          <div class="cust-tag-wrap">
+            <input class="cust-input" type="text" value="${esc(tagsVal)}"
+              placeholder="e.g. #tag1, #tag2"
+              data-idx="${i}" data-field="tags"
+              ${tab.fixedTags ? 'disabled' : ''}
+              oninput="onCustTagInput(this)" onfocus="onCustTagFocus(this)" onblur="onCustTagBlur(this,${i})">
+            <div class="cust-tag-sugg" id="cust-sugg-${i}"></div>
+            <div class="cust-conflict" id="cust-conflict-${i}"></div>
+          </div>
+          <button class="hide-toggle${tab.hidden ? ' hidden-tab' : ''}" title="${tab.hidden ? 'Show tab' : 'Hide tab'}"
+            onclick="toggleCustHide(${i})">${tab.hidden ? EYE_OFF : EYE_ON}</button>
+        `;
+
+        // Drag events
+        row.addEventListener('dragstart', e => {
+          _dragSrc = i;
+          row.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        row.addEventListener('dragend', () => {
+          row.classList.remove('dragging');
+          document.querySelectorAll('.customize-row').forEach(r => r.classList.remove('drag-over'));
+        });
+        row.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          document.querySelectorAll('.customize-row').forEach(r => r.classList.remove('drag-over'));
+          row.classList.add('drag-over');
+        });
+        row.addEventListener('drop', e => {
+          e.preventDefault();
+          if (_dragSrc === null || _dragSrc === i) return;
+          const moved = _custDraft.splice(_dragSrc, 1)[0];
+          _custDraft.splice(i, 0, moved);
+          _dragSrc = null;
+          renderCustomizeRows();
+        });
+
+        container.appendChild(row);
+      });
+    }
+
+    function onCustInput(el) {
+      const idx = +el.dataset.idx;
+      _custDraft[idx].label = el.value;
+    }
+
+    function onCustTagInput(el) {
+      const idx = +el.dataset.idx;
+      const raw = el.value;
+      // Show tag autocomplete suggestions
+      const partial = raw.split(',').pop().trim().replace(/^#/, '');
+      const sugg = document.getElementById('cust-sugg-' + idx);
+      const pool = allTagPool().filter(t => t.startsWith('#') && t.slice(1).toLowerCase().startsWith(partial.toLowerCase()) && t !== ('#' + partial));
+      if (partial.length > 0 && pool.length) {
+        sugg.innerHTML = pool.slice(0, 5).map(t =>
+          `<div class="cust-tag-sugg-item" onmousedown="applyCustTag(${idx},'${t}')">${t}</div>`
+        ).join('');
+        sugg.classList.add('visible');
+      } else {
+        sugg.classList.remove('visible');
+      }
+    }
+
+    function onCustTagFocus(el) { onCustTagInput(el); }
+
+    function onCustTagBlur(el, idx) {
+      setTimeout(() => {
+        document.getElementById('cust-sugg-' + idx)?.classList.remove('visible');
+        validateCustConflict(idx);
+        // Commit parsed tags
+        const raw = el.value;
+        const parsed = raw.split(',').map(t => {
+          t = t.trim();
+          if (!t) return null;
+          return t.startsWith('#') || t.startsWith('@') ? t : '#' + t;
+        }).filter(Boolean);
+        _custDraft[idx].tags = parsed;
+        el.value = parsed.join(', ');
+      }, 150);
+    }
+
+    function applyCustTag(idx, tag) {
+      const inputs = document.querySelectorAll(`[data-idx="${idx}"][data-field="tags"]`);
+      const el = inputs[0];
+      if (!el) return;
+      const parts = el.value.split(',').map(t => t.trim()).filter(Boolean);
+      parts[parts.length - 1] = tag;
+      el.value = parts.join(', ') + ', ';
+      el.focus();
+      onCustTagInput(el);
+    }
+
+    function validateCustConflict(idx) {
+      const myTags = _custDraft[idx].tags.map(t => t.toLowerCase());
+      const conflicts = [];
+      _custDraft.forEach((t, i) => {
+        if (i === idx) return;
+        t.tags.forEach(tag => {
+          if (myTags.includes(tag.toLowerCase())) conflicts.push(`${tag} (${t.label})`);
+        });
+      });
+      const el = document.getElementById('cust-conflict-' + idx);
+      if (el) {
+        el.textContent = conflicts.length ? `⚠ Conflict: ${conflicts.join(', ')}` : '';
+        el.classList.toggle('visible', conflicts.length > 0);
+      }
+    }
+
+    function allTagPool() {
+      const seen = new Set();
+      const result = [];
+      const push = t => { if (!seen.has(t)) { seen.add(t); result.push(t); } };
+      _custDraft.forEach(t => t.tags.forEach(push));
+      [...notes, ...insps, ...oons].forEach(item =>
+        (item.text?.match(/#\w+/g) || []).forEach(push)
+      );
+      return result;
+    }
+
+    function toggleCustHide(idx) {
+      _custDraft[idx].hidden = !_custDraft[idx].hidden;
+      renderCustomizeRows();
+    }
+
+    function saveCustomize() {
+      tabsConfig = _custDraft.map(t => ({...t, tags: [...t.tags]}));
+      localStorage.setItem(TABS_CFG_KEY, JSON.stringify(tabsConfig));
+      renderTabBar();
+      updateHintTags();
+      closeCustomize();
+    }
+
+    function resetTabsConfig() {
+      _custDraft = DEFAULT_TABS_CONFIG.map(t => ({...t, tags: [...t.tags]}));
+      renderCustomizeRows();
+    }
+
+    function updateHintTags() {
+      const hint = document.getElementById('compose-hint');
+      if (!hint) return;
+      // Rebuild routing tag pills from config
+      hint.querySelectorAll('.hint-tag').forEach(el => el.remove());
+      const customizeBtn = hint.querySelector('.customize-link');
+      const staticTags = ['[ ] task', '#todo'];
+      const dynamicTags = tabsConfig.filter(t => !t.hidden && !t.fixedTags).map(t => t.tags[0]).filter(Boolean);
+      const allHintTags = [...staticTags, ...dynamicTags, '@name'];
+      allHintTags.forEach(tag => {
+        const span = document.createElement('span');
+        span.className = 'hint-tag';
+        span.textContent = tag;
+        hint.insertBefore(span, customizeBtn);
+      });
+    }
+
+    function renderAll() {
+      renderTodos();
+      renderNotes();
+      renderInsps();
+      renderOon();
+      renderDemos();
+    }
+
+    // ── Init ──────────────────────────────────────
+    initTheme();
+    renderTabBar();
+    updateHintTags();
+    renderTodos();
+    renderNotes();
+    renderInsps();
+    renderOon();
+    // init instances view + sync toolbar buttons without triggering localStorage write
+    ;['grid','wide','table'].forEach(k =>
+      document.getElementById('btn-demo-' + k)?.classList.toggle('active', demoView === k)
+    );
+    renderDemos();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+
+  <!-- Customize Tabs Modal -->
+  <div class="customize-overlay" id="customize-overlay" onclick="if(event.target===this)closeCustomize()">
+    <div class="customize-modal">
+      <div class="customize-modal-header">
+        <span class="customize-modal-title">Customize tabs</span>
+        <button class="customize-modal-close" onclick="closeCustomize()">✕</button>
+      </div>
+      <div class="customize-modal-body">
+        <div class="customize-col-labels">
+          <span></span>
+          <span>Tab name</span>
+          <span>Routing tags</span>
+          <span></span>
+        </div>
+        <div id="customize-rows"></div>
+      </div>
+      <div class="customize-modal-footer">
+        <button class="cust-reset" onclick="resetTabsConfig()">Reset to defaults</button>
+        <button class="cust-save-btn" onclick="saveCustomize()">Save</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

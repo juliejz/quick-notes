@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Notes — UI Exploration</title>
+  <!-- Inline theme init to prevent flash -->
+  <script>(function(){const t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface:  #131312;
+      --surface2: #1F201D;
+      --surface3: #272820;
+      --border:   #52524B;
+      --accent:   #9ef53a;
+      --on-accent:#0e0e0c;
+      --text:     #eeeee8;
+      --muted:    #8a8a82;
+      --radius:   14px;
+    }
+    [data-theme="light"] {
+      --surface:  #ffffff;
+      --surface2: #fbfbf9;
+      --surface3: #f3f3ef;
+      --border:   #deded8;
+      --accent:   #3A9A1C;
+      --on-accent:#ffffff;
+      --text:     #111110;
+      --muted:    #66665e;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--surface);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* ── Grain ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 85%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+      transition: opacity 0.15s;
+    }
+    .nav-logo:hover { opacity: 0.75; }
+
+    .nav-logo-icon { font-size: 18px; color: var(--accent); flex-shrink: 0; }
+
+    .nav-logo-wordmark {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 17px;
+      font-style: italic;
+      font-weight: 400;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+
+    /* ── Theme switcher (identical to Design Hub) ── */
+    .theme-switcher {
+      display: flex;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .theme-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 7px;
+      border: none;
+      background: none;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .theme-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .theme-btn:not(.active):hover { color: var(--text); }
+
+    /* ── Page body ── */
+    .project-page {
+      position: relative;
+      z-index: 1;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 56px 32px 80px;
+    }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+    .nav-breadcrumb-link {
+      color: var(--muted);
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-breadcrumb-link:hover { color: var(--accent); }
+    .nav-breadcrumb-sep { opacity: 0.4; }
+    .nav-breadcrumb-current { color: var(--text); }
+
+    /* ── Project header ── */
+    .project-page-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 36px;
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      line-height: 1.15;
+    }
+
+    .project-page-desc {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+
+    /* ── Project tabs (identical to Design Hub) ── */
+    .project-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .project-tab {
+      padding: 10px 0;
+      margin-right: 28px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      position: relative;
+      transition: color 0.15s;
+      user-select: none;
+    }
+    .project-tab::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0; right: 0;
+      height: 1.5px;
+      background: var(--accent);
+      border-radius: 2px 2px 0 0;
+      transform: scaleX(0);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .project-tab.active { color: var(--text); }
+    .project-tab.active::after { transform: scaleX(1); }
+    .project-tab:not(.active):hover { color: var(--text); }
+
+    .project-tab-panel { display: none; }
+    .project-tab-panel.active { display: block; }
+
+    /* ── Options grid (identical to Design Hub) ── */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 640px) { .options-grid { grid-template-columns: 1fr; } }
+
+    /* ── Thumb card (identical to Design Hub) ── */
+    .thumb-card {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.25s cubic-bezier(0.34,1.2,0.64,1);
+      background: var(--surface);
+    }
+    .thumb-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+    }
+    .thumb-card.no-mockup { cursor: default; }
+    .thumb-card.no-mockup:hover { transform: none; border-color: var(--border); }
+
+    .thumb-preview {
+      position: relative;
+      flex-shrink: 0;
+      background: var(--surface2);
+      padding: 56px 30px;
+    }
+
+    .thumb-screen {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    [data-theme="light"] .thumb-screen {
+      border-color: rgba(0,0,0,0.07);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+
+    .thumb-screen iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 1280px;
+      height: 720px;
+      border: none;
+      display: block;
+      pointer-events: none;
+      transform-origin: top left;
+    }
+
+    /* placeholder when no mockup */
+    .thumb-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--muted);
+      text-align: center;
+      padding: 20px;
+    }
+    .thumb-placeholder-icon { font-size: 20px; opacity: 0.35; }
+    .thumb-placeholder p { font-size: 12px; }
+    .thumb-placeholder code {
+      font-size: 11px;
+      font-family: 'SF Mono', ui-monospace, monospace;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    .thumb-hover-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+      border-radius: 8px;
+    }
+    .thumb-hover-label {
+      background: var(--accent);
+      color: var(--on-accent);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 20px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+    .thumb-card:hover .thumb-hover-overlay { opacity: 1; }
+    .thumb-card.no-mockup:hover .thumb-hover-overlay { opacity: 0; }
+
+    .thumb-info {
+      padding: 16px 20px 18px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .thumb-num {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 13px; color: var(--accent); font-weight: 400;
+    }
+    .thumb-title { font-weight: 600; font-size: 15px; line-height: 1.3; }
+    .thumb-desc  { font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+    /* ── Preview overlay (identical to Design Hub) ── */
+    .preview-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .preview-overlay.open { opacity: 1; pointer-events: all; }
+
+    .preview-header {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+
+    .preview-nav { display: flex; align-items: center; gap: 6px; }
+
+    .preview-nav-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, opacity 0.15s;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .preview-nav-btn:hover { background: rgba(255,255,255,0.18); }
+    .preview-nav-btn:disabled { opacity: 0.25; cursor: default; }
+
+    .preview-nav-count {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      min-width: 36px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .preview-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .preview-num { font-size: 12px; color: var(--accent); font-family: -apple-system, sans-serif; }
+
+    .preview-close {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .preview-close:hover { background: rgba(255,255,255,0.18); }
+
+    .preview-frame-wrap {
+      width: 100%;
+      max-width: 1280px;
+      flex: 1;
+      min-height: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      transform: scale(0.96) translateY(16px);
+      transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .preview-overlay.open .preview-frame-wrap { transform: scale(1) translateY(0); }
+    .preview-frame-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
+
+    /* ── Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a href="index.html" class="nav-logo">
+      <span class="nav-logo-icon">✦</span>
+      <span class="nav-logo-wordmark">Quick Notes</span>
+    </a>
+    <div class="theme-switcher">
+      <button class="theme-btn" id="btn-light" onclick="setTheme('light')">Light</button>
+      <button class="theme-btn" id="btn-dark"  onclick="setTheme('dark')">Dark</button>
+    </div>
+  </nav>
+
+  <!-- Project page -->
+  <div class="project-page">
+    <div class="breadcrumb">
+      <a href="index.html" class="nav-breadcrumb-link">Home</a>
+      <span class="nav-breadcrumb-sep">›</span>
+      <span class="nav-breadcrumb-current" id="breadcrumb-title"></span>
+    </div>
+    <div class="project-page-title" id="project-page-title"></div>
+    <div class="project-page-desc"  id="project-page-desc"></div>
+    <div class="project-tabs" id="project-tabs" style="display:none"></div>
+    <div id="tab-panels"></div>
+  </div>
+
+  <!-- Mockup preview overlay -->
+  <div class="preview-overlay" id="preview-overlay">
+    <div class="preview-header">
+      <div class="preview-title">
+        <span class="preview-num"  id="preview-num"></span>
+        <span id="preview-title-text"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="preview-nav">
+          <button class="preview-nav-btn" id="preview-prev" onclick="stepPreview(-1)" title="Previous (←)">&#8592;</button>
+          <span class="preview-nav-count" id="preview-count"></span>
+          <button class="preview-nav-btn" id="preview-next" onclick="stepPreview(1)"  title="Next (→)">&#8594;</button>
+        </div>
+        <button class="preview-close" onclick="closePreview()">✕</button>
+      </div>
+    </div>
+    <div class="preview-frame-wrap">
+      <iframe id="preview-iframe" src="" title="Mockup preview"></iframe>
+    </div>
+  </div>
+
+  <script>
+    // ── Project data ──────────────────────────────────────────
+    // Edit OPTIONS to add/update design explorations.
+    // `mockup` is a relative path from this file. Leave as '' if not ready yet.
+    const PROJECT = {
+      title: 'Quick Notes',
+      description: 'A focused scratchpad PWA installed on the MacBook Dock. Exploring layout and UI directions here.',
+      options: [
+        // ── Overall Layout ──────────────────────────────────────
+        {
+          number: '01',
+          tab: 'Overall Layout',
+          title: 'Stacked',
+          description: 'Compose at top, horizontal tabs below, content scrolls. Linear top-down input flow.',
+          mockup: 'mockups/overall-layout/option-01.html',
+        },
+        {
+          number: '02',
+          tab: 'Overall Layout',
+          title: 'Left Sidebar',
+          description: 'Vertical tab nav on the left, compose + content stacked on the right.',
+          mockup: 'mockups/overall-layout/option-02.html',
+        },
+        {
+          number: '03',
+          tab: 'Overall Layout',
+          title: 'Inverted surfaces',
+          description: 'Background uses the darker surface tone; cards and compose box use the lighter one — cards sink in rather than float up.',
+          mockup: 'mockups/overall-layout/option-03.html',
+        },
+        // ── Notes Tab ────────────────────────────────────────────
+        {
+          number: '01',
+          tab: 'Notes Tab',
+          title: 'Todo card',
+          description: 'Active todos grouped in a single bordered card. Completed items collapse inside it. Plain notes follow below with a divider.',
+          mockup: 'mockups/notes-tab/option-01.html',
+        },
+        {
+          number: '02',
+          tab: 'Notes Tab',
+          title: 'Bento grid',
+          description: 'Todo card spans 2/3 width, first note fills the remaining 1/3. All subsequent notes flow in a 3-column grid below.',
+          mockup: 'mockups/notes-tab/option-02.html',
+        },
+        {
+          number: '03',
+          tab: 'Notes Tab',
+          title: 'Side-by-side columns',
+          description: 'Tasks pinned to a fixed left column, notes in a scrollable right column. Both sections always visible at once.',
+          mockup: 'mockups/notes-tab/option-03.html',
+        },
+        {
+          number: '04',
+          tab: 'Notes Tab',
+          title: 'Unified timeline',
+          description: 'Todos and notes in one chronological list, distinguished only by icon — checkbox vs accent dot. No visual separation between types.',
+          mockup: 'mockups/notes-tab/option-04.html',
+        },
+        // ── 1:1 Notes Tab ────────────────────────────────────────
+        {
+          number: '01',
+          tab: '1:1 Notes',
+          title: 'Card grid + modal',
+          description: 'Person cards in a 2-column grid, each showing ~3 lines with a gradient fade. Click opens a modal listing all notes with timestamps and a copy-all button.',
+          mockup: 'mockups/oon-tab/option-01.html',
+        },
+        {
+          number: '02',
+          tab: '1:1 Notes',
+          title: 'Inline editing on cards',
+          description: 'Same card grid, but each note on the card is clickable to edit in place. An "Add note" row appears on hover. Modal also supports inline editing per note.',
+          mockup: 'mockups/oon-tab/option-02.html',
+        },
+        {
+          number: '03',
+          tab: '1:1 Notes',
+          title: 'Single textarea modal',
+          description: 'Card grid as before, but clicking opens a modal with one freeform textarea — all notes in one editable block, one line per note. Save or copy when done.',
+          mockup: 'mockups/oon-tab/option-03.html',
+        },
+        {
+          number: '04',
+          tab: '1:1 Notes',
+          title: 'Card grid + per-note list modal',
+          description: 'Card grid preview as option 03, but the modal shows each note as its own row — bullet, text, timestamp, with inline edit on click and delete on hover. Closest to the main app\'s current 1:1 Notes list style.',
+          mockup: 'mockups/oon-tab/option-04.html',
+        },
+        // ── Instance Tab ─────────────────────────────────────────
+        {
+          number: '01',
+          tab: 'Instance Tab',
+          title: 'Refined card grid',
+          description: 'Two-column card grid. Each card shows service name, domain, and a row per credential — URL / User / Password — each with its own always-visible Copy button. Password masked with a Show toggle.',
+          mockup: 'mockups/instance-tab/option-01.html',
+        },
+        {
+          number: '02',
+          tab: 'Instance Tab',
+          title: 'Compact table',
+          description: 'Dense single-panel table: one row per instance, fixed columns for Name, URL, Username, Password, Tags. Copy and Show buttons appear on row hover. Best for scanning and cleaning up many instances.',
+          mockup: 'mockups/instance-tab/option-02.html',
+        },
+        {
+          number: '03',
+          tab: 'Instance Tab',
+          title: 'Wide action cards',
+          description: 'Full-width single-column cards. Service name and URL on the left, credential fields in the middle, then two large "Copy user" / "Copy password" buttons always visible on the right — optimised for speed during a live demo.',
+          mockup: 'mockups/instance-tab/option-03.html',
+        },
+        // ── Inspiration ──────────────────────────────────────────
+        {
+          number: '01',
+          tab: 'Inspiration',
+          title: 'Coming soon',
+          description: 'Layout options for the Inspiration tab — to be explored next.',
+          mockup: '',
+        },
+      ],
+    };
+
+    // ── Theme ─────────────────────────────────────────────────
+    const html = document.documentElement;
+
+    function setTheme(t) {
+      html.setAttribute('data-theme', t);
+      localStorage.setItem('theme', t);
+      document.getElementById('btn-light').classList.toggle('active', t === 'light');
+      document.getElementById('btn-dark').classList.toggle('active',  t === 'dark');
+      // Sync theme into any loaded thumbnail / preview iframes
+      document.querySelectorAll('iframe').forEach(f => {
+        try { f.contentWindow?.postMessage({ theme: t }, '*'); } catch (_) {}
+      });
+    }
+
+    // Init from localStorage or system preference
+    const _savedTheme = localStorage.getItem('theme') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(_savedTheme);
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if (!localStorage.getItem('theme')) setTheme(e.matches ? 'dark' : 'light');
+    });
+
+    // ── Render project ────────────────────────────────────────
+    function renderProject(p) {
+      document.getElementById('breadcrumb-title').textContent    = p.title;
+      document.getElementById('project-page-title').textContent  = p.title;
+      document.getElementById('project-page-desc').textContent   = p.description;
+
+      const options = p.options || [];
+
+      // Derive ordered unique tabs
+      const tabs = [];
+      options.forEach(o => { const t = o.tab || 'Options'; if (!tabs.includes(t)) tabs.push(t); });
+
+      const tabBar         = document.getElementById('project-tabs');
+      const panelsContainer = document.getElementById('tab-panels');
+      tabBar.innerHTML     = '';
+      panelsContainer.innerHTML = '';
+      tabBar.style.display = tabs.length > 1 ? 'flex' : 'none';
+
+      tabs.forEach((tabName, i) => {
+        const tabId = 'tab-' + i;
+
+        // Tab button
+        const btn = document.createElement('div');
+        btn.className    = 'project-tab' + (i === 0 ? ' active' : '');
+        btn.dataset.tab  = tabId;
+        btn.textContent  = tabName;
+        btn.addEventListener('click', () => switchProjectTab(tabId));
+        tabBar.appendChild(btn);
+
+        // Panel + grid
+        const panel = document.createElement('div');
+        panel.className = 'project-tab-panel' + (i === 0 ? ' active' : '');
+        panel.id        = tabId;
+
+        const grid = document.createElement('div');
+        grid.className  = 'options-grid';
+
+        const tabOptions = options.filter(o => (o.tab || 'Options') === tabName);
+        tabOptions.forEach(o => {
+          const card = document.createElement('div');
+          card.className = 'thumb-card' + (o.mockup ? '' : ' no-mockup');
+          card.innerHTML = o.mockup
+            ? `<div class="thumb-preview">
+                 <div class="thumb-screen">
+                   <iframe data-src="${o.mockup}" title="${o.title}" scrolling="no"></iframe>
+                   <div class="thumb-hover-overlay">
+                     <div class="thumb-hover-label">Open fullscreen →</div>
+                   </div>
+                 </div>
+               </div>
+               <div class="thumb-info">
+                 <div class="thumb-num">Option ${o.number}</div>
+                 <div class="thumb-title">${o.title}</div>
+                 <div class="thumb-desc">${o.description}</div>
+               </div>`
+            : `<div class="thumb-preview">
+                 <div class="thumb-screen">
+                   <div class="thumb-placeholder">
+                     <div class="thumb-placeholder-icon">✦</div>
+                     <p>Mockup not added yet</p>
+                     <code>mockups/option-${o.number}.html</code>
+                   </div>
+                 </div>
+               </div>
+               <div class="thumb-info">
+                 <div class="thumb-num">Option ${o.number}</div>
+                 <div class="thumb-title">${o.title}</div>
+                 <div class="thumb-desc">${o.description}</div>
+               </div>`;
+
+          if (o.mockup) {
+            card.addEventListener('click', () => openPreview(o, tabOptions));
+            const iframe = card.querySelector('iframe');
+            if (iframe) {
+              iframe.addEventListener('load', scaleThumbIframes);
+              thumbObserver.observe(iframe);
+            }
+          }
+          grid.appendChild(card);
+        });
+
+        panel.appendChild(grid);
+        panelsContainer.appendChild(panel);
+      });
+
+      requestAnimationFrame(scaleThumbIframes);
+      setTimeout(scaleThumbIframes, 100);
+    }
+
+    // ── Tab switching ─────────────────────────────────────────
+    function switchProjectTab(id) {
+      document.querySelectorAll('.project-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === id);
+      });
+      document.querySelectorAll('.project-tab-panel').forEach(p => {
+        p.classList.toggle('active', p.id === id);
+      });
+      requestAnimationFrame(scaleThumbIframes);
+    }
+
+    // ── iframe scale ──────────────────────────────────────────
+    const THUMB_NATURAL_WIDTH = 1280;
+    function scaleThumbIframes() {
+      document.querySelectorAll('.thumb-screen').forEach(screen => {
+        const iframe = screen.querySelector('iframe');
+        if (iframe) iframe.style.transform = `scale(${screen.offsetWidth / THUMB_NATURAL_WIDTH})`;
+      });
+    }
+    window.addEventListener('resize', scaleThumbIframes);
+
+    // ── Lazy-load thumbnail iframes ───────────────────────────
+    const thumbObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const iframe = entry.target;
+          if (iframe.dataset.src && !iframe.src) {
+            const theme = html.getAttribute('data-theme') || 'dark';
+            iframe.src = iframe.dataset.src + '?theme=' + theme;
+          }
+          thumbObserver.unobserve(iframe);
+        }
+      });
+    }, { rootMargin: '200px' });
+
+    // ── Preview overlay ───────────────────────────────────────
+    let previewOptions = [];
+    let previewIndex   = 0;
+
+    function openPreview(option, optionsList) {
+      if (optionsList) {
+        previewOptions = optionsList.filter(o => o.mockup);
+        previewIndex   = previewOptions.findIndex(o => o === option);
+      }
+      _renderPreview(previewOptions[previewIndex] ?? option);
+      document.getElementById('preview-overlay').classList.add('open');
+    }
+
+    function _renderPreview(option) {
+      document.getElementById('preview-num').textContent        = option.number;
+      document.getElementById('preview-title-text').textContent = option.title;
+      const iframe = document.getElementById('preview-iframe');
+      const theme  = html.getAttribute('data-theme') || 'dark';
+      iframe.src   = option.mockup + '?theme=' + theme + '&v=' + Date.now();
+
+      const total = previewOptions.length;
+      document.getElementById('preview-count').textContent          = total > 1 ? `${previewIndex + 1} / ${total}` : '';
+      document.getElementById('preview-prev').disabled              = previewIndex === 0;
+      document.getElementById('preview-next').disabled              = previewIndex === total - 1;
+      document.getElementById('preview-prev').style.display         = total > 1 ? '' : 'none';
+      document.getElementById('preview-next').style.display         = total > 1 ? '' : 'none';
+      document.getElementById('preview-count').style.display        = total > 1 ? '' : 'none';
+    }
+
+    function stepPreview(dir) {
+      const next = previewIndex + dir;
+      if (next < 0 || next >= previewOptions.length) return;
+      previewIndex = next;
+      _renderPreview(previewOptions[previewIndex]);
+    }
+
+    function closePreview() {
+      document.getElementById('preview-overlay').classList.remove('open');
+      setTimeout(() => { document.getElementById('preview-iframe').src = ''; }, 300);
+    }
+
+    document.getElementById('preview-overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('preview-overlay')) closePreview();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (!document.getElementById('preview-overlay').classList.contains('open')) return;
+      if (e.key === 'Escape')      closePreview();
+      if (e.key === 'ArrowLeft')   stepPreview(-1);
+      if (e.key === 'ArrowRight')  stepPreview(1);
+    });
+
+    // ── Init ─────────────────────────────────────────────────
+    renderProject(PROJECT);
+  </script>
+</body>
+</html>
