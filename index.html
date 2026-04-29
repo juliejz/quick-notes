@@ -108,35 +108,41 @@
     /* ── Theme toggle ── */
     .theme-toggle {
       display: flex;
-      background: var(--card);
+      align-items: center;
+      background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 2px;
+      border-radius: 9px;
+      padding: 3px;
       gap: 2px;
     }
     .theme-btn {
-      background: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 7px;
       border: none;
-      cursor: pointer;
+      background: none;
       font-family: inherit;
-      font-size: 12px;
+      font-size: 13px;
+      font-weight: 500;
       color: var(--muted);
-      padding: 4px 10px;
-      border-radius: 4px;
-      transition: all 0.15s;
-      min-height: 28px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
     }
-    .theme-btn.active { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
-    [data-theme="light"] .theme-btn.active { background: var(--card); }
-    .theme-btn:hover:not(.active) { color: var(--text); }
+    .theme-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .theme-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+    .theme-btn:not(.active):hover { color: var(--text); }
     .theme-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     /* ── Auth ── */
     .nav-right { display: flex; align-items: center; gap: 10px; }
     .auth-btn {
-      background: none; border: 1px solid var(--border); border-radius: 6px;
-      color: var(--muted); font-family: inherit; font-size: 12px;
-      padding: 4px 10px; min-height: 28px; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      background: none; border: 1px solid var(--border); border-radius: 7px;
+      color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 500;
+      padding: 5px 12px; min-height: 32px; cursor: pointer;
       transition: color 0.15s, border-color 0.15s;
     }
     .auth-btn:hover { color: var(--text); border-color: var(--text); }
@@ -152,6 +158,26 @@
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; user-select: none;
     }
+    .auth-menu-wrap { position: relative; }
+    .auth-menu {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden;
+      min-width: 140px; z-index: 300;
+      display: none;
+    }
+    .auth-menu.open { display: block; }
+    .auth-menu-name {
+      padding: 8px 12px 6px;
+      font-size: 11px; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .auth-menu-item {
+      padding: 8px 12px; font-size: 13px; color: var(--text);
+      cursor: pointer; transition: background 0.1s;
+    }
+    .auth-menu-item:hover { background: var(--surface3); }
     .sync-dot {
       width: 6px; height: 6px; border-radius: 50%;
       background: var(--accent); display: none;
@@ -1234,13 +1260,17 @@
       </div>
       <div class="nav-right">
         <div class="sync-dot" id="sync-dot" title="Syncing…"></div>
-        <div id="auth-slot">
-          <button class="auth-btn" onclick="signInWithGoogle()">Sign in</button>
-        </div>
         <div class="theme-toggle" role="group" aria-label="Theme">
-          <button class="theme-btn" id="btn-light" onclick="setTheme('light')">Light</button>
-          <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+          <button class="theme-btn" id="btn-light" onclick="setTheme('light')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            Light
+          </button>
+          <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            Dark
+          </button>
         </div>
+        <div id="auth-slot" style="visibility:hidden"></div>
       </div>
     </nav>
 
@@ -1453,7 +1483,19 @@
 
     function signOut() {
       auth.signOut();
+      document.getElementById('auth-menu')?.classList.remove('open');
     }
+
+    function toggleAuthMenu() {
+      document.getElementById('auth-menu')?.classList.toggle('open');
+    }
+
+    document.addEventListener('click', e => {
+      const wrap = document.getElementById('auth-menu-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('auth-menu')?.classList.remove('open');
+      }
+    });
 
     function setSyncDot(on) {
       document.getElementById('sync-dot').classList.toggle('visible', on);
@@ -1492,16 +1534,27 @@
       } catch (e) { console.error('Load error', e); }
     }
 
+    const GOOGLE_LOGO = `<svg width="14" height="14" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><g><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></g></svg>`;
+
     function renderAuthSlot(user) {
       const slot = document.getElementById('auth-slot');
       if (!user) {
-        slot.innerHTML = `<button class="auth-btn" onclick="signInWithGoogle()">Sign in</button>`;
+        slot.innerHTML = `<button class="auth-btn" onclick="signInWithGoogle()">${GOOGLE_LOGO} Sign in</button>`;
       } else {
-        const display = user.photoURL
-          ? `<img class="auth-avatar" src="${user.photoURL}" title="${user.displayName || ''} — click to sign out" onclick="signOut()">`
-          : `<div class="auth-initial" title="${user.displayName || ''} — click to sign out" onclick="signOut()">${(user.displayName||'?')[0].toUpperCase()}</div>`;
-        slot.innerHTML = display;
+        const name = user.displayName || user.email || '';
+        const avatar = user.photoURL
+          ? `<img class="auth-avatar" src="${user.photoURL}" alt="${name}">`
+          : `<div class="auth-initial">${name[0]?.toUpperCase() || '?'}</div>`;
+        slot.innerHTML = `
+          <div class="auth-menu-wrap" id="auth-menu-wrap">
+            <div onclick="toggleAuthMenu()">${avatar}</div>
+            <div class="auth-menu" id="auth-menu">
+              <div class="auth-menu-name">${name}</div>
+              <div class="auth-menu-item" onclick="signOut()">Sign out</div>
+            </div>
+          </div>`;
       }
+      slot.style.visibility = 'visible';
     }
 
     auth.onAuthStateChanged(async user => {
