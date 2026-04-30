@@ -47,6 +47,9 @@ quick-notes/
 ├── manifest.json           # PWA config
 ├── sw.js                   # Service worker (offline support)
 ├── icon.svg                # PWA icon (SVG, any size)
+├── icon.png                # PWA icon (1024×1024 PNG, used in manifest)
+├── favicon.png             # Browser tab favicon (cropped tightly from icon.png, 256×256)
+├── pitfalls.md             # Tricky bugs that took multiple attempts — read before touching related code
 ├── mockups/                # UI explorations, grouped by design variable
 │   └── {variable-name}/    # One subfolder per tab (e.g. overall-layout, instance-tab)
 │       ├── option-01.html
@@ -128,11 +131,13 @@ Look for the `#page-project` section and all associated CSS and JS. Reuse the st
 ```
 
 ### 2.6 Service worker (sw.js)
-Cache-first strategy for offline use. Bump `CACHE` version string on every deploy to bust the cache.
+**Network-first for `index.html`** — always fetches the latest from the network, updates the cache, falls back to cache when offline. This means GitHub Pages deploys are picked up immediately without needing a cache bump.
+
+**Cache-first for static assets** (`manifest.json`, `icon.svg`, `favicon.png`). Only bump `CACHE` version if you change these files.
 
 ```js
-const CACHE = 'quick-notes-v3';
-const ASSETS = ['/', '/index.html', '/manifest.json', '/icon.svg'];
+const CACHE = 'quick-notes-v5';
+const ASSETS = ['/manifest.json', '/icon.svg', '/favicon.png'];
 
 self.addEventListener('install', e =>
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)))
@@ -149,6 +154,7 @@ self.addEventListener('fetch', e =>
 
 ### 2.7 Required HTML head tags
 ```html
+<link rel="icon" href="favicon.png" type="image/png" />
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#131312" id="theme-meta" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -250,7 +256,8 @@ A horizontal divider separates todos from notes when both are present.
 ### 3.3 Inspiration tab
 Prompt text + free-form side tags (e.g. `#illustration`, `#layout`).
 - **2-column grid** — cards use the same style as Notes cards (no bullet dot); each card shows full text, tags, Copy button, timestamp, and delete (hover to reveal)
-- `#insp` tag stripped from stored tags (it's the router, not a category)
+- The routing tag (default `#insp`) is stripped from stored tags; it's the router, not a category
+- Empty state text reads the tab's current label and routing tag dynamically from `tabsConfig`, and includes a "Customize your tag settings here" link that opens the customize modal
 
 ### 3.4 1:1 Notes tab
 Notes tagged with `@name` for a specific colleague.
@@ -277,7 +284,7 @@ A "Customize" link at the end of the compose-hint row opens a modal where the us
 - **Hide/show tabs** — eye toggle per row
 - **Reset to defaults**
 
-Config stored in `localStorage` under key `quick-tabs-config`. Tab bar and routing logic are driven entirely from this config at runtime.
+Config stored in `localStorage` under key `quick-tabs-config`. Tab bar, routing logic, and empty state text are driven entirely from this config at runtime.
 
 **Fixed routing (not user-configurable):**
 - `[ ]` / `#todo` → always routes to Notes tab
@@ -352,9 +359,9 @@ Always use `var(--token)` — never hardcode colours. Use `--on-accent` for any 
 
 ### 4.6 Nav / logo
 ```
-✦  Quick Notes   (italic serif wordmark)         [Light] [Dark]
+✦  Quick Notes   (italic serif wordmark)         [Light] [Dark]  [avatar]
 ```
-The ✦ mark in `--accent`, wordmark in DM Serif Display italic.
+The ✦ mark in `--accent`, wordmark in DM Serif Display italic. Avatar is the signed-in user's Google photo (falls back to initial on error). A 6×6px accent dot to the left of the avatar flashes (opacity transition, never shifts layout) when data is syncing.
 
 ---
 
