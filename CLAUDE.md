@@ -1,5 +1,5 @@
 # Quick Notes — Context & Rules
-_Last updated: 2026-04-23_
+_Last updated: 2026-04-30_
 
 ---
 
@@ -180,13 +180,19 @@ Schemas:
 ### 3.1 Single compose input (smart parser)
 One input box for everything. Content type is detected from raw text and routed automatically — no forms, no modals. After submit, the app auto-switches to the relevant tab.
 
+**Inline URL linking** — two ways to embed a hyperlink on selected text:
+1. **Right-click → Add link** — select text, right-click, choose "Add link", paste/type a URL and confirm. The label stays visible as an accent-coloured chip; the URL is hidden in the compose box and only expanded to `[label](url)` markdown on submit.
+2. **Paste over selection** — select text, then paste a bare URL (`https://…`) directly. Same result as above.
+
+Links render as clickable `<a>` elements in saved notes/ideas. Bare URLs in text are also auto-linkified on render.
+
 **Routing priority (checked in order):**
 
 | Trigger | Routes to |
 |---------|-----------|
 | Any line starts with `[ ]` or `- [ ]`, OR `#todo` tag | Notes tab → Todo checklist |
 | `#insp` tag | Inspiration tab |
-| `#instance`, `#demo`, `#link`, `#cred`, `#credentials` tag | Instances tab |
+| `#instance` tag | Instances tab |
 | `@name` mention (no credential tags) | 1:1 Notes tab |
 | Anything else | Notes tab → Plain note |
 
@@ -243,8 +249,7 @@ A horizontal divider separates todos from notes when both are present.
 
 ### 3.3 Inspiration tab
 Prompt text + free-form side tags (e.g. `#illustration`, `#layout`).
-- **Grid view** — 2-column cards, title (first line), body preview, Copy button, tags
-- **Doc view** — full text rows, Copy button, tags
+- **2-column grid** — cards use the same style as Notes cards (no bullet dot); each card shows full text, tags, Copy button, timestamp, and delete (hover to reveal)
 - `#insp` tag stripped from stored tags (it's the router, not a category)
 
 ### 3.4 1:1 Notes tab
@@ -330,7 +335,7 @@ Always use `var(--token)` — never hardcode colours. Use `--on-accent` for any 
 - Grain texture overlay on body (same SVG noise as Design Hub)
 - Near-zero border-radius on inputs (`8px` max), `12px` on note/demo cards
 - No shadows on cards — use border instead (`1px solid var(--border)`)
-- Lime green (`--accent`) used only for: active states, the add button, note bullet/marker, active tab indicator
+- Lime green (`--accent`) used only for: active states, the add button, active tab indicator
 - No purple, no blue, no gradients
 
 ### 4.5 Layout

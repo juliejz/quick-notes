@@ -6,6 +6,7 @@
   <script>(function(){const t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quick Notes</title>
+  <link rel="icon" href="favicon.png" type="image/png" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#131312" id="theme-meta" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -125,7 +126,7 @@
       background: none;
       font-family: inherit;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--muted);
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
@@ -137,11 +138,11 @@
     .theme-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     /* ── Auth ── */
-    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-right { display: flex; align-items: center; gap: 6px; }
     .auth-btn {
       display: flex; align-items: center; gap: 6px;
       background: none; border: 1px solid var(--border); border-radius: 7px;
-      color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 500;
+      color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 600;
       padding: 5px 12px; min-height: 32px; cursor: pointer;
       transition: color 0.15s, border-color 0.15s;
     }
@@ -179,10 +180,10 @@
     }
     .auth-menu-item:hover { background: var(--surface3); }
     .sync-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--accent); display: none;
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent); opacity: 0; transition: opacity 0.2s;
     }
-    .sync-dot.visible { display: block; }
+    .sync-dot.visible { opacity: 1; }
 
     /* ── Global compose ── */
     .compose-wrap {
@@ -213,6 +214,14 @@
     }
     .tag-highlight { color: var(--accent); }
     .ghost-line { color: var(--border); }
+    .compose-chip-label {
+      color: var(--accent);
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    /* brackets + URL are invisible but still occupy correct space for cursor alignment */
+    .compose-chip-meta { color: transparent; }
 
     .compose-input {
       position: relative;
@@ -241,6 +250,7 @@
       position: absolute;
       bottom: 10px;
       right: 10px;
+      z-index: 2;
       height: 36px;
       padding: 0 16px;
       background: var(--accent);
@@ -253,7 +263,7 @@
       gap: 6px;
       font-family: inherit;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--on-accent);
       transition: opacity 0.15s, transform 0.1s;
     }
@@ -302,6 +312,7 @@
     }
 
     /* ── Customize link ── */
+    .see-all-link { margin-left: 0 !important; }
     .customize-link {
       margin-left: auto;
       font-size: 11px;
@@ -315,6 +326,120 @@
       transition: color 0.15s;
     }
     .customize-link:hover { color: var(--accent); }
+
+    /* ── Syntax reference modal ── */
+    .syntax-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .syntax-overlay.open { opacity: 1; pointer-events: all; }
+    .syntax-modal {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 480px;
+      max-width: calc(100vw - 40px);
+      max-height: calc(100vh - 80px);
+      display: flex; flex-direction: column;
+      transform: translateY(12px) scale(0.98);
+      transition: transform 0.25s cubic-bezier(0.34,1.2,0.64,1);
+      overflow: hidden;
+    }
+    .syntax-overlay.open .syntax-modal { transform: translateY(0) scale(1); }
+    .syntax-modal-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .syntax-modal-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .syntax-modal-close {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 16px; padding: 4px; line-height: 1;
+    }
+    .syntax-modal-close:hover { color: var(--text); }
+    .syntax-modal-body { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+    .syntax-group-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+    }
+    .syntax-row {
+      display: flex; align-items: baseline; gap: 12px;
+      padding: 6px 0; border-bottom: 1px solid var(--border);
+    }
+    .syntax-row:last-child { border-bottom: none; }
+    .syntax-code {
+      font-family: 'SF Mono', ui-monospace, monospace;
+      font-size: 12px; color: var(--accent);
+      flex-shrink: 0; min-width: 140px;
+    }
+    .syntax-desc { font-size: 13px; color: var(--muted); }
+
+    /* ── Rich embed card ── */
+    .rich-embed {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      text-decoration: none;
+      color: var(--text);
+      margin-top: 6px;
+      transition: border-color 0.15s;
+    }
+    .rich-embed:hover { border-color: var(--muted); }
+    .rich-embed-favicon {
+      width: 16px; height: 16px;
+      flex-shrink: 0; border-radius: 3px;
+    }
+    .rich-embed-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .rich-embed-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rich-embed-domain { font-size: 11px; color: var(--muted); }
+
+    /* ── Link context menu ── */
+    .link-ctx-menu {
+      position: fixed; z-index: 9999;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      padding: 4px;
+      min-width: 140px;
+    }
+    .link-ctx-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px;
+      font-size: 13px; color: var(--text);
+      cursor: pointer; border-radius: 5px;
+      background: none; border: none; width: 100%; text-align: left;
+    }
+    .link-ctx-item:hover { background: var(--surface3); }
+    .link-url-popup {
+      position: fixed; z-index: 10000;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      padding: 10px;
+      display: flex; gap: 6px; align-items: center;
+      min-width: 280px;
+    }
+    .link-url-input {
+      flex: 1; background: var(--surface3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 8px; font-size: 13px; color: var(--text);
+      outline: none;
+    }
+    .link-url-input:focus { border-color: var(--accent); }
+    .link-url-confirm {
+      background: var(--accent); color: var(--on-accent);
+      border: none; border-radius: 6px; padding: 5px 10px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
 
     /* ── Customize modal ── */
     .customize-overlay {
@@ -557,13 +682,16 @@
       gap: 24px;
       align-items: start;
     }
+    .col-label-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
     .col-label {
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 10px;
     }
 
     .todos-section { }
@@ -573,12 +701,14 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-card);
       overflow: hidden;
+      padding-top: 13px;
+      padding-bottom: 13px;
     }
     .todo-item {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 10px;
-      padding: 11px 14px;
+      padding: 7px 14px;
     }
     .todo-item.new-item { animation: slide-in 0.18s ease-out both; }
 
@@ -617,27 +747,27 @@
     }
     .todo-item.done .todo-text { text-decoration: line-through; color: var(--muted); }
 
-    .todo-time { font-size: 11px; color: var(--muted); white-space: nowrap; margin-top: 2px; flex-shrink: 0; }
+    .todo-actions {
+      position: relative; display: flex; align-items: center;
+      flex-shrink: 0; margin: -7px -14px -7px 0;
+    }
+    .todo-time {
+      font-size: 11px; color: var(--muted); white-space: nowrap;
+      padding-right: 14px; transition: opacity 0.15s; flex-shrink: 0;
+    }
+    .todo-item:hover .todo-time { opacity: 0; }
 
     .todo-delete {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 44px;
-      min-height: 44px;
-      margin: -11px -14px -11px 0;
-      flex-shrink: 0;
-      opacity: 0;
-      transition: opacity 0.15s, color 0.15s;
+      position: absolute; right: 0;
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px;
+      opacity: 0; transition: opacity 0.15s, color 0.15s;
     }
     .todo-item:hover .todo-delete { opacity: 1; }
     .todo-delete:hover { color: var(--text); }
     .todo-delete:focus-visible { opacity: 1; outline: 2px solid var(--accent); border-radius: 4px; }
-    @media (hover: none) { .todo-delete { opacity: 0.45; } }
+    @media (hover: none) { .todo-time { opacity: 0; } .todo-delete { opacity: 0.45; } }
 
     /* ── Completed chevron ── */
     .completed-toggle {
@@ -883,7 +1013,7 @@
     .person-avatar {
       width: 26px; height: 26px; border-radius: 50%;
       background: var(--accent); color: var(--on-accent);
-      font-size: 10px; font-weight: 700;
+      font-size: 10px; font-weight: 600;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .person-name {
@@ -932,7 +1062,7 @@
     .oon-modal-avatar {
       width: 30px; height: 30px; border-radius: 50%;
       background: var(--accent); color: var(--on-accent);
-      font-size: 11px; font-weight: 700;
+      font-size: 11px; font-weight: 600;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .oon-modal-person { flex: 1; }
@@ -998,7 +1128,7 @@
     .oon-modal-add-input:focus { border-color: var(--accent); }
     .oon-modal-add-btn {
       padding: 7px 14px; background: var(--accent); color: var(--on-accent);
-      border: none; border-radius: 6px; font-size: 13px; font-weight: 500;
+      border: none; border-radius: 6px; font-size: 13px; font-weight: 600;
       cursor: pointer; font-family: inherit;
     }
     .copy-all-btn { display: none; } /* legacy, keep for JS compat */
@@ -1050,7 +1180,7 @@
     .demo-edit-cancel:hover { color: var(--text); }
     .demo-edit-save {
       padding: 7px 16px; background: var(--accent); color: var(--on-accent);
-      border: none; border-radius: 6px; font-size: 13px; font-weight: 500;
+      border: none; border-radius: 6px; font-size: 13px; font-weight: 600;
       cursor: pointer; font-family: inherit;
     }
 
@@ -1162,12 +1292,12 @@
     .demo-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 32px; }
     .demo-th-row, .demo-tr { display: grid; grid-template-columns: 150px 1fr 110px 130px 130px 56px; padding: 0 16px; }
     .demo-th-row { padding-top: 9px; padding-bottom: 9px; border-bottom: 1px solid var(--border); background: var(--surface3); }
-    .demo-th { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+    .demo-th { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
     .demo-tr { border-bottom: 1px solid var(--border); align-items: center; min-height: 52px; transition: background 0.12s; position: relative; }
     .demo-tr:last-child { border-bottom: none; }
     .demo-tr:hover { background: var(--surface2); }
     .demo-td-name { padding-right: 12px; padding-top: 6px; padding-bottom: 6px; }
-    .demo-td-main { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .demo-td-main { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .demo-td-sub { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
     .demo-td-notes { padding-right: 12px; padding-top: 6px; padding-bottom: 6px; min-width: 0; align-self: center; }
     .demo-td-notes-text { font-size: 12px; color: var(--muted); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -1215,6 +1345,51 @@
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
 
+    /* ── Todo sections ── */
+    .todo-section-block { margin-top: 13px; }
+    .todo-section-block.section-drag-over { outline: 2px dashed var(--border); outline-offset: -2px; border-radius: var(--radius-card); }
+    .todo-section-header {
+      position: relative;
+      display: flex; align-items: center; gap: 8px;
+      padding: 20px 14px 9px 40px;
+      border-top: 1px solid var(--border);
+    }
+    .section-drag-handle {
+      position: absolute; left: 14px;
+      color: var(--muted); cursor: grab; font-size: 14px; flex-shrink: 0;
+      opacity: 0; transition: opacity 0.15s; line-height: 1;
+    }
+    .section-drag-handle:active { cursor: grabbing; }
+    .todo-section-header:hover .section-drag-handle { opacity: 1; }
+    .section-name {
+      flex: 1; font-size: 13px; font-weight: 600;
+      color: var(--text); cursor: pointer; line-height: 1.4;
+    }
+    .section-name-input {
+      flex: 1; background: none; border: none; border-bottom: 1px solid var(--accent);
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      color: var(--text); outline: none; padding: 0;
+    }
+    .section-delete {
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      opacity: 0; transition: opacity 0.15s; padding: 4px; display: flex; align-items: center;
+    }
+    .todo-section-header:hover .section-delete { opacity: 1; }
+    .section-delete:hover { color: var(--text); }
+    .todo-drop-zone { min-height: 0; transition: min-height 0.1s, background 0.1s; border-radius: 4px; margin: 0 8px; }
+    body.dragging-todo .todo-drop-zone { min-height: 20px; }
+    .todo-drop-zone.drag-over { background: var(--surface3); outline: 2px dashed var(--border); outline-offset: -2px; min-height: 32px; }
+    .add-section-btn {
+      background: none; border: none; cursor: pointer;
+      font-family: inherit; font-size: 11px; color: var(--muted); padding: 0;
+      display: flex; align-items: center; gap: 4px; transition: color 0.15s;
+    }
+    .add-section-btn:hover { color: var(--accent); }
+    .todo-link, .inline-link { color: var(--accent); text-decoration: none; }
+    .todo-link { font-family: 'SF Mono', ui-monospace, monospace; font-size: 13px; }
+    .inline-link { font-weight: 500; }
+    .todo-link:hover, .inline-link:hover { text-decoration: underline; }
+
     /* ── Inline editing ── */
     .todo-text { cursor: text; }
     .note-text { cursor: text; }
@@ -1259,7 +1434,6 @@
         Quick Notes
       </div>
       <div class="nav-right">
-        <div class="sync-dot" id="sync-dot" title="Syncing…"></div>
         <div class="theme-toggle" role="group" aria-label="Theme">
           <button class="theme-btn" id="btn-light" onclick="setTheme('light')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -1270,6 +1444,7 @@
             Dark
           </button>
         </div>
+        <div class="sync-dot" id="sync-dot" title="Syncing…"></div>
         <div id="auth-slot" style="visibility:hidden"></div>
       </div>
     </nav>
@@ -1300,6 +1475,7 @@
         <span class="hint-tag">#insp</span>
         <span class="hint-tag">@name</span>
         <span class="hint-tag">#instance</span>
+        <button class="customize-link see-all-link" onclick="openSyntaxRef()">See all</button>
         <button class="customize-link" onclick="openCustomize()">Customize</button>
       </div>
     </div>
@@ -1311,7 +1487,10 @@
     <div class="section" id="section-notes" role="tabpanel">
       <div class="notes-split" id="notes-split">
         <div class="notes-col-tasks">
-          <div class="col-label">Tasks</div>
+          <div class="col-label-row">
+            <span class="col-label">Tasks</span>
+            <button class="add-section-btn" onclick="addSection()">+ Add section</button>
+          </div>
           <div class="todos-section" id="todos-section"></div>
         </div>
         <div class="notes-col-notes">
@@ -1324,12 +1503,6 @@
 
     <!-- Inspiration -->
     <div class="section hidden" id="section-insp" role="tabpanel">
-      <div class="insp-toolbar">
-        <div class="view-toggle" role="group" aria-label="View">
-          <button class="view-btn active" id="btn-insp-grid" onclick="setInspView('grid')">Grid</button>
-          <button class="view-btn"        id="btn-insp-doc"  onclick="setInspView('doc')">Doc</button>
-        </div>
-      </div>
       <div id="insp-container"></div>
     </div>
 
@@ -1434,7 +1607,7 @@
       { id: 'notes', label: 'Notes',       tags: [],                                           fixedTags: true,  hidden: false },
       { id: 'insp',  label: 'Inspiration', tags: ['#insp'],                                    fixedTags: false, hidden: false },
       { id: 'oon',   label: '1:1 Notes',   tags: ['@'],                                        fixedTags: true,  hidden: false },
-      { id: 'demos', label: 'Instances',   tags: ['#instance','#demo','#link','#cred','#credentials'], fixedTags: false, hidden: false },
+      { id: 'demos', label: 'Instances',   tags: ['#instance'], fixedTags: false, hidden: false },
     ];
 
     function loadTabsConfig() {
@@ -1542,9 +1715,10 @@
         slot.innerHTML = `<button class="auth-btn" onclick="signInWithGoogle()">${GOOGLE_LOGO} Sign in</button>`;
       } else {
         const name = user.displayName || user.email || '';
+        const initial = name[0]?.toUpperCase() || '?';
         const avatar = user.photoURL
-          ? `<img class="auth-avatar" src="${user.photoURL}" alt="${name}">`
-          : `<div class="auth-initial">${name[0]?.toUpperCase() || '?'}</div>`;
+          ? `<img class="auth-avatar" src="${user.photoURL}" alt="${name}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'auth-initial',textContent:'${initial}'}))">`
+          : `<div class="auth-initial">${initial}</div>`;
         slot.innerHTML = `
           <div class="auth-menu-wrap" id="auth-menu-wrap">
             <div onclick="toggleAuthMenu()">${avatar}</div>
@@ -1572,6 +1746,8 @@
     let demoView = (() => { const v = localStorage.getItem(DVIEW_KEY); return (v && v !== 'table') ? v : 'wide'; })();
     let inspView = localStorage.getItem(IVIEW_KEY) || 'grid';
     let completedOpen = false;
+    let completedOpenBySection = {}; // keyed by section id or 'default'
+    let _todoDragId = null; // id of todo being dragged
 
     // ── Theme ─────────────────────────────────────
     function setTheme(t) {
@@ -1634,6 +1810,115 @@
 
     function mask(pw) { return pw ? '•'.repeat(Math.min(pw.length, 10)) : ''; }
 
+    // ── Linkify: converts [text](url) and bare URLs to <a> tags ──
+    const URL_RE = /https?:\/\/[^\s<>"']+/g;
+    // URL part allows balanced one-level parens (e.g. Teams links with "(Design)")
+    // Non-paren segments exclude both ( and ); paren groups \([^)]*\) handle one level of ()
+    const MD_URL_PAT = 'https?:\\/\\/[^()\\s]*(?:\\([^)]*\\)[^()\\s]*)*';
+    const MD_LINK_RE = new RegExp('\\[([^\\]]+)\\]\\((' + MD_URL_PAT + ')\\)', 'g');
+    // Inline link tracking — textarea value is NOT modified; links stored as regions
+    // [{start, end, label, url}] sorted by start
+    let _pendingLinks = [];
+    let _prevComposeLen = 0;
+    function _addPendingLink(start, end, label, url) {
+      // Remove any overlapping links first
+      _pendingLinks = _pendingLinks.filter(l => l.end <= start || l.start >= end);
+      _pendingLinks.push({ start, end, label, url });
+      _pendingLinks.sort((a, b) => a.start - b.start);
+    }
+    function _updatePendingLinks() {
+      const val = compose.value;
+      const delta = val.length - _prevComposeLen;
+      const cursor = compose.selectionStart;
+      _prevComposeLen = val.length;
+      if (delta === 0) return;
+      _pendingLinks = _pendingLinks.filter(lnk => {
+        if (cursor <= lnk.start) { lnk.start += delta; lnk.end += delta; }
+        else if (cursor > lnk.start && cursor <= lnk.end) return false; // edited inside
+        return val.substring(lnk.start, lnk.end) === lnk.label;
+      });
+    }
+    function expandLinks(text) {
+      // Insert [label](url) for each pending link, in reverse order to preserve positions
+      let result = text;
+      for (let i = _pendingLinks.length - 1; i >= 0; i--) {
+        const { start, end, label, url } = _pendingLinks[i];
+        result = result.substring(0, start) + `[${label}](${url})` + result.substring(end);
+      }
+      return result;
+    }
+    function linkify(text) {
+      // First handle markdown [text](url)
+      let s = text.replace(MD_LINK_RE, (_, label, url) =>
+        `<a class="inline-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>`
+      );
+      // Then linkify remaining bare URLs (not already inside an href)
+      s = s.replace(/https?:\/\/[^\s<>"']+/g, match => {
+        // skip if already inside an <a> tag (preceded by href=")
+        return `<a class="inline-link" href="${esc(match)}" target="_blank" rel="noopener">${esc(match)}</a>`;
+      });
+      return s;
+    }
+    function _linkifyBareUrls(plainSegment) {
+      // plainSegment is already HTML-escaped; wrap bare URLs only (not inside existing tags)
+      return esc(plainSegment).replace(/https?:\/\/[^\s]+/g, match =>
+        `<a class="inline-link" href="${match}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${match}</a>`
+      );
+    }
+    function linkifyEsc(text) {
+      // Split on [label](url) markdown links; linkify bare URLs only in the non-link segments
+      let result = '';
+      let last = 0;
+      const mdRe = new RegExp('\\[([^\\]]+)\\]\\((' + MD_URL_PAT + ')\\)', 'g');
+      let m;
+      while ((m = mdRe.exec(text)) !== null) {
+        result += _linkifyBareUrls(text.slice(last, m.index));
+        result += `<a class="inline-link" href="${esc(m[2])}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(m[1])}</a>`;
+        last = m.index + m[0].length;
+      }
+      result += _linkifyBareUrls(text.slice(last));
+      return result;
+    }
+
+    // ── Rich embed cache: id → { title, favicon, domain } | 'loading' | 'error' ──
+    const _embedCache = {};
+    function isStandaloneUrl(text) {
+      return /^https?:\/\/[^\s]+$/.test(text.trim());
+    }
+    function fetchEmbed(id, url, onDone) {
+      if (_embedCache[id]) { onDone(); return; }
+      _embedCache[id] = 'loading';
+      fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}&meta=true`)
+        .then(r => r.json())
+        .then(data => {
+          const d = data?.data;
+          _embedCache[id] = {
+            title: d?.title || new URL(url).hostname,
+            favicon: d?.logo?.url || `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(new URL(url).hostname)}`,
+            domain: new URL(url).hostname
+          };
+          onDone();
+        })
+        .catch(() => {
+          try {
+            _embedCache[id] = { title: new URL(url).hostname, favicon: `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(new URL(url).hostname)}`, domain: new URL(url).hostname };
+          } catch { _embedCache[id] = 'error'; }
+          onDone();
+        });
+    }
+    function renderEmbedCard(id, url) {
+      const c = _embedCache[id];
+      if (!c || c === 'loading') return `<a class="rich-embed" href="${esc(url)}" target="_blank" rel="noopener"><span class="rich-embed-info"><span class="rich-embed-domain">${esc(url)}</span></span></a>`;
+      if (c === 'error') return `<a class="inline-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a>`;
+      return `<a class="rich-embed" href="${esc(url)}" target="_blank" rel="noopener">
+        ${c.favicon ? `<img class="rich-embed-favicon" src="${esc(c.favicon)}" onerror="this.style.display='none'" />` : ''}
+        <span class="rich-embed-info">
+          <span class="rich-embed-title">${esc(c.title)}</span>
+          <span class="rich-embed-domain">${esc(c.domain)}</span>
+        </span>
+      </a>`;
+    }
+
     function parseTags(str) { return (str || '').match(/[#@][\w-]+/g) || []; }
 
     const X_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -1658,6 +1943,30 @@
       const credTags = getCredentialTags();
       const inspTags = getInspTags();
 
+      // 0. Section + todos: any line starts with ##
+      const hasSectionLine = lines.some(l => /^##\s+/.test(l));
+      if (hasSectionLine) {
+        const results = [];
+        let currentSection = null;
+        lines.forEach(line => {
+          if (/^##\s+/.test(line)) {
+            const secName = line.replace(/^##\s+/, '').trim();
+            currentSection = { id: crypto.randomUUID(), type: 'section', name: secName, createdAt: new Date().toISOString() };
+            results.push(currentSection);
+          } else {
+            const todoText = line.replace(/^-?\s*\[[ x]?\]\s*/, '').replace(/#todo\b/gi, '').trim();
+            if (todoText) {
+              results.push({
+                type: 'todo', text: todoText, done: false,
+                sectionId: currentSection ? currentSection.id : undefined,
+                createdAt: new Date().toISOString(), id: crypto.randomUUID()
+              });
+            }
+          }
+        });
+        return results;
+      }
+
       // 1. Todo: [ ] prefix OR #todo tag
       const hasCheckbox = lines.some(l => /^\[[ x]?\]/.test(l) || /^-\s*\[[ x]?\]/.test(l));
       const hasTodoTag  = tags.some(t => t.toLowerCase() === '#todo');
@@ -1665,7 +1974,19 @@
         return lines
           .map(l => l.replace(/^-?\s*\[[ x]?\]\s*/, '').replace(/#todo\b/gi, '').trim())
           .filter(Boolean)
-          .map(t => ({ type: 'todo', text: t, done: false, createdAt: new Date().toISOString(), id: crypto.randomUUID() }));
+          .map(l => {
+            // @section-name routing: find @word matching an existing section name
+            const atMatch = l.match(/@(\S+)/);
+            let sectionId;
+            if (atMatch) {
+              const sec = todos.find(t => t.type === 'section' &&
+                t.name.toLowerCase().replace(/\s+/g, '-') === atMatch[1].toLowerCase());
+              if (sec) { sectionId = sec.id; l = l.replace(atMatch[0], '').trim(); }
+            }
+            const entry = { type: 'todo', text: l, done: false, createdAt: new Date().toISOString(), id: crypto.randomUUID() };
+            if (sectionId) entry.sectionId = sectionId;
+            return entry;
+          });
       }
 
       // 2. Inspiration: configured insp tags
@@ -1703,7 +2024,7 @@
     // ── Handle add ────────────────────────────────
     function handleAdd() {
       const ta  = document.getElementById('compose');
-      const raw = ta.value.trim();
+      const raw = expandLinks(ta.value.trim());
       if (!raw) return;
 
       const entries = parseInput(raw);
@@ -1711,14 +2032,19 @@
 
       const newTodoIds = [];
       entries.forEach(entry => {
-        if (entry.type === 'todo') { todos.push(entry); save(TODOS_KEY, todos); newTodoIds.push(entry.id); }
+        if (entry.type === 'section') { todos.push(entry); /* saved below */ }
+        if (entry.type === 'todo') { todos.push(entry); newTodoIds.push(entry.id); /* saved below */ }
         if (entry.type === 'insp') { insps.push(entry); save(INSP_KEY,  insps); }
         if (entry.type === 'demo') { demos.push(entry); save(DEMOS_KEY, demos); }
         if (entry.type === 'oon')  { oons.push(entry);  save(OON_KEY,   oons); }
         if (entry.type === 'note') { notes.push(entry); save(NOTES_KEY, notes); }
       });
+      // Save todos once after all section/todo entries are pushed
+      if (newTodoIds.length || entries.some(e => e.type === 'section')) {
+        save(TODOS_KEY, todos);
+      }
 
-      if (type === 'todo' || type === 'note') {
+      if (type === 'todo' || type === 'note' || type === 'section') {
         switchTab('notes');
         // animate only the first new todo (batch adds animate the top item)
         renderTodos(newTodoIds[0] ?? null);
@@ -1729,6 +2055,8 @@
       if (type === 'demo')  { switchTab('demos'); renderDemos(); }
 
       ta.value = '';
+      _pendingLinks = [];
+      _prevComposeLen = 0;
       ta.style.height = 'auto';
       syncBackdrop();
     }
@@ -1761,7 +2089,19 @@
 
     function syncBackdrop() {
       const val = compose.value;
-      const highlighted = esc(val).replace(/(#\w+|@\w+)/g, '<span class="tag-highlight">$1</span>');
+      // Render pending link regions as styled chips; rest gets tag highlighting
+      function _highlightTags(s) {
+        return esc(s).replace(/(#\w+|@\w+)/g, '<span class="tag-highlight">$1</span>');
+      }
+      let rawHighlighted = '';
+      let pos2 = 0;
+      for (const lnk of _pendingLinks) {
+        if (pos2 < lnk.start) rawHighlighted += _highlightTags(val.slice(pos2, lnk.start));
+        rawHighlighted += `<span class="compose-chip-label">${esc(lnk.label)}</span>`;
+        pos2 = lnk.end;
+      }
+      rawHighlighted += _highlightTags(val.slice(pos2));
+      let highlighted = rawHighlighted;
       const credTags2 = getCredentialTags();
       const isInstance = val.split('\n').some(l => credTags2.has(l.trim().toLowerCase()));
       let ghost = '';
@@ -1784,7 +2124,7 @@
       ['#todo'].forEach(push);
       tabsConfig.filter(t => !t.fixedTags && !t.hidden).forEach(t => t.tags.forEach(push));
       [...notes, ...todos, ...insps, ...oons].forEach(item =>
-        (item.text.match(/#\w+/g) || []).forEach(push)
+        (item.text?.match(/#\w+/g) || []).forEach(push)
       );
       return result;
     }
@@ -1794,6 +2134,106 @@
       const pos = compose.selectionStart;
       const m = val.slice(0, pos).match(/#(\w*)$/);
       return m ? { partial: m[1], start: pos - m[0].length } : null;
+    }
+
+    function sectionPartial() {
+      const val = compose.value;
+      const pos = compose.selectionStart;
+      // Match ## at start of the current line
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      const lineUpToCursor = val.slice(lineStart, pos);
+      const m = lineUpToCursor.match(/^##\s*(.*)$/);
+      return m ? { partial: m[1], lineStart, lineEnd: pos } : null;
+    }
+
+    let _cachedSectionHit = null;
+
+    function sectionSlug(name) { return name.toLowerCase().replace(/\s+/g, '-'); }
+
+    function atSectionPartial() {
+      const val = compose.value;
+      const pos = compose.selectionStart;
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      const line = val.slice(lineStart, pos);
+      // Only trigger on lines that look like a todo
+      if (!/^\[[ x]?\]/.test(line.trim()) && !/^-?\s*\[[ x]?\]/.test(line.trim())) return null;
+      const m = line.match(/@([\w-]*)$/);
+      return m ? { partial: m[1], start: lineStart + line.lastIndexOf('@'), end: pos } : null;
+    }
+
+    let _cachedAtHit = null;
+
+    function showAtSectionSugg() {
+      const hit = atSectionPartial();
+      if (!hit) return false;
+      const sections = todos.filter(t => t.type === 'section');
+      if (!sections.length) return false;
+      const matches = sections.filter(s =>
+        sectionSlug(s.name).startsWith(hit.partial.toLowerCase()) &&
+        sectionSlug(s.name) !== hit.partial.toLowerCase()
+      ).slice(0, 6);
+      if (!matches.length) return false;
+      _cachedAtHit = hit;
+      suggIdx = -1;
+      tagSugg.innerHTML = matches.map(s =>
+        `<div class="tag-sugg-item" data-at-section="${esc(s.name)}" onmousedown="applyAtSectionSugg(this)">@${esc(sectionSlug(s.name))}</div>`
+      ).join('');
+      const { x, y } = caretCoords(compose);
+      tagSugg.style.left = Math.max(0, x) + 'px';
+      tagSugg.style.top  = (y + 4) + 'px';
+      tagSugg.classList.add('visible');
+      return true;
+    }
+
+    function applyAtSectionSugg(el) {
+      const name = el.dataset.atSection;
+      const hit = _cachedAtHit;
+      if (!hit || !name) return;
+      const val = compose.value;
+      const slug = '@' + sectionSlug(name);
+      compose.value = val.slice(0, hit.start) + slug + ' ' + val.slice(hit.end);
+      compose.selectionStart = compose.selectionEnd = hit.start + slug.length + 1;
+      _cachedAtHit = null;
+      hideTagSugg();
+      syncBackdrop();
+      compose.focus();
+    }
+
+    function showSectionSugg() {
+      const hit = sectionPartial();
+      if (!hit) { hideSectionSugg(); return; }
+      const sections = todos.filter(t => t.type === 'section');
+      if (!sections.length) { hideSectionSugg(); return; }
+      const matches = sections.filter(s =>
+        s.name.toLowerCase().startsWith(hit.partial.toLowerCase()) &&
+        s.name.toLowerCase() !== hit.partial.toLowerCase()
+      ).slice(0, 6);
+      if (!matches.length) { hideSectionSugg(); return; }
+      _cachedSectionHit = hit;
+      suggIdx = -1;
+      tagSugg.innerHTML = matches.map(s =>
+        `<div class="tag-sugg-item" data-section-name="${esc(s.name)}" onmousedown="applySectionSugg(this)">${esc(s.name)}</div>`
+      ).join('');
+      const { x, y } = caretCoords(compose);
+      tagSugg.style.left = Math.max(0, x) + 'px';
+      tagSugg.style.top  = (y + 4) + 'px';
+      tagSugg.classList.add('visible');
+    }
+
+    function hideSectionSugg() { hideTagSugg(); _cachedSectionHit = null; }
+
+    function applySectionSugg(el) {
+      const name = el.dataset.sectionName;
+      const hit = _cachedSectionHit;
+      if (!hit || !name) return;
+      const val = compose.value;
+      compose.value = val.slice(0, hit.lineStart) + '## ' + name + val.slice(hit.lineEnd);
+      const newPos = hit.lineStart + '## '.length + name.length;
+      compose.selectionStart = compose.selectionEnd = newPos;
+      _cachedSectionHit = null;
+      hideTagSugg();
+      syncBackdrop();
+      compose.focus();
     }
 
     function caretCoords(el) {
@@ -1866,6 +2306,7 @@
     const compose = document.getElementById('compose');
 
     compose.addEventListener('input', () => {
+      _updatePendingLinks();
       compose.style.height = 'auto';
       compose.style.height = Math.min(compose.scrollHeight, 320) + 'px';
 
@@ -1889,7 +2330,8 @@
       }
 
       syncBackdrop();
-      showTagSugg();
+      if (sectionPartial()) showSectionSugg();
+      else if (!showAtSectionSugg()) showTagSugg();
     });
 
     compose.addEventListener('keydown', e => {
@@ -1918,7 +2360,13 @@
         if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
           const active = tagSugg.querySelector('.tag-sugg-item.active')
                       || tagSugg.querySelector('.tag-sugg-item');
-          if (active) { e.preventDefault(); applyTagSugg(active.dataset.tag); return; }
+          if (active) {
+            e.preventDefault();
+            if (active.dataset.sectionName !== undefined) applySectionSugg(active);
+            else if (active.dataset.atSection !== undefined) applyAtSectionSugg(active);
+            else applyTagSugg(active.dataset.tag);
+            return;
+          }
         }
       }
 
@@ -1982,7 +2430,7 @@
     function _syncEmptyState() {
       const notesSplit = document.getElementById('notes-split');
       const notesEmpty = document.getElementById('notes-empty');
-      const bothEmpty  = todos.length === 0 && notes.length === 0;
+      const bothEmpty  = todos.filter(t => t.type === 'todo').length === 0 && notes.length === 0;
       notesSplit.classList.toggle('hidden', bothEmpty);
       if (bothEmpty) {
         notesEmpty.classList.remove('hidden');
@@ -2001,42 +2449,88 @@
     function renderTodos(newId = null) {
       _syncEmptyState();
       const todosSection = document.getElementById('todos-section');
-      const active    = todos.filter(t => !t.done);
-      const completed = todos.filter(t => t.done);
-      if (!todos.length) {
+      const allTodoItems = todos.filter(t => t.type === 'todo');
+      const sections     = todos.filter(t => t.type === 'section');
+
+      if (!allTodoItems.length && !sections.length) {
         todosSection.innerHTML = '';
-      } else {
-        todosSection.innerHTML = `
-          <div class="todos-card">
-            <div id="active-todos">${active.map(t => renderTodoItem(t, newId)).join('')}</div>
-            ${completed.length ? `
-              <button class="completed-toggle" onclick="toggleCompleted()" aria-expanded="${completedOpen}">
-                <svg class="chevron ${completedOpen ? 'open' : ''}" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Completed (${completed.length})
-              </button>
-              <div class="completed-list ${completedOpen ? '' : 'collapsed'}">
-                ${completed.map(t => renderTodoItem(t, newId)).join('')}
-              </div>
-            ` : ''}
-          </div>
-        `;
+        return;
       }
+
+      function renderDropZone(sectionId) {
+        const sid = sectionId === null ? 'default' : sectionId;
+        return `<div class="todo-drop-zone" data-section="${sectionId === null ? '__default__' : sectionId}"
+          ondragover="todoDragOver(event,this)" ondragleave="todoDragLeave(this)" ondrop="todoDropOn(event,this)"></div>`;
+      }
+
+      function renderSectionTodos(sectionId, sectionKey) {
+        const active    = allTodoItems.filter(t => !t.done && (sectionId === null ? !t.sectionId : t.sectionId === sectionId));
+        const completed = allTodoItems.filter(t =>  t.done && (sectionId === null ? !t.sectionId : t.sectionId === sectionId));
+        const compOpen  = completedOpenBySection[sectionKey] || false;
+        let html = '';
+        html += renderDropZone(sectionId);
+        html += active.map(t => renderTodoItem(t, newId)).join('') + (active.length ? renderDropZone(sectionId) : '');
+        if (completed.length) {
+          html += `
+            <button class="completed-toggle" onclick="toggleCompletedSection('${sectionKey}')" aria-expanded="${compOpen}">
+              <svg class="chevron ${compOpen ? 'open' : ''}" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Completed (${completed.length})
+            </button>
+            <div class="completed-list ${compOpen ? '' : 'collapsed'}">
+              ${completed.map(t => renderTodoItem(t, newId)).join('')}
+            </div>`;
+        }
+        return html;
+      }
+
+      // Build card HTML
+      let cardHtml = '<div class="todos-card">';
+
+      // Default (unsectioned) block — always render so todos can be dragged back out
+      cardHtml += renderSectionTodos(null, 'default');
+
+      // Each named section
+      sections.forEach(sec => {
+        cardHtml += `<div class="todo-section-block" data-section-id="${sec.id}"
+          ondragover="sectionDragOver(event,this)" ondragleave="sectionDragLeave(this)" ondrop="sectionDropOn(event,this)">
+          <div class="todo-section-header">
+            <span class="section-drag-handle" draggable="true"
+              ondragstart="sectionDragStart(event,'${sec.id}')"
+              ondragend="sectionDragEnd(event)">⠿</span>
+            <span class="section-name" onclick="startEditSection('${sec.id}')">${esc(sec.name)}</span>
+            <button class="section-delete" onclick="deleteSection('${sec.id}')">${X_ICON}</button>
+          </div>
+          ${renderSectionTodos(sec.id, sec.id)}
+        </div>`;
+      });
+
+      cardHtml += '</div>';
+
+      todosSection.innerHTML = cardHtml;
     }
 
     function renderNoteCards() {
       _syncEmptyState();
       const notesList = document.getElementById('notes-list');
-      notesList.innerHTML = notes.slice().reverse().map(n => `
+      notesList.innerHTML = notes.slice().reverse().map(n => {
+        const isEmbed = isStandaloneUrl(n.text);
+        if (isEmbed && !_embedCache[n.id]) {
+          fetchEmbed(n.id, n.text.trim(), () => renderNoteCards());
+        }
+        const body = isEmbed
+          ? renderEmbedCard(n.id, n.text.trim())
+          : `<div class="note-text" onclick="startEditNote('${n.id}')">${linkifyEsc(n.text)}</div>`;
+        return `
         <div class="note-card" data-id="${n.id}">
-
-          <div class="note-text" onclick="startEditNote('${n.id}')">${esc(n.text)}</div>
+          ${isEmbed ? `<div class="note-text">${body}</div>` : body}
           <div class="note-meta">
             <button class="delete-btn" onclick="deleteNote('${n.id}')" aria-label="Delete">${X_ICON}</button>
             <span class="note-time">${formatTime(n.createdAt)}</span>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
 
     function renderNotes() {
@@ -2044,20 +2538,218 @@
       renderNoteCards();
     }
 
+    function renderTodoTextWithLinks(text) {
+      // Handle [label](url) markdown links first
+      let result = '';
+      let last = 0;
+      const mdRe = new RegExp('\\[([^\\]]+)\\]\\((' + MD_URL_PAT + ')\\)', 'g');
+      let m;
+      while ((m = mdRe.exec(text)) !== null) {
+        const before = text.slice(last, m.index);
+        result += renderTodoBareText(before);
+        result += `<a class="inline-link" href="${esc(m[2])}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(m[1])}</a>`;
+        last = m.index + m[0].length;
+      }
+      result += renderTodoBareText(text.slice(last));
+      return result || esc(text);
+    }
+    function renderTodoBareText(text) {
+      if (!text) return '';
+      if (/^https?:\/\/[^\s]+$/.test(text.trim()) && text.trim() === text) {
+        let hostname = text;
+        try { hostname = new URL(text).hostname; } catch {}
+        return `<a class="todo-link" href="${esc(text)}" target="_blank" rel="noopener">${esc(hostname)}</a>`;
+      }
+      let result = '';
+      let last = 0;
+      const re = /https?:\/\/[^\s]+/g;
+      let match;
+      while ((match = re.exec(text)) !== null) {
+        result += esc(text.slice(last, match.index));
+        let hostname = match[0];
+        try { hostname = new URL(match[0]).hostname; } catch {}
+        result += `<a class="todo-link" href="${esc(match[0])}" target="_blank" rel="noopener">${esc(hostname)}</a>`;
+        last = match.index + match[0].length;
+      }
+      result += esc(text.slice(last));
+      return result;
+    }
+
     function renderTodoItem(t, newId = null) {
       const isNew = t.id === newId ? ' new-item' : '';
       return `
-        <div class="todo-item ${t.done ? 'done' : ''}${isNew}" data-id="${t.id}">
+        <div class="todo-item ${t.done ? 'done' : ''}${isNew}" data-id="${t.id}"
+          draggable="true"
+          ondragstart="todoDragStart(event,'${t.id}')"
+          ondragend="todoDragEnd(event)">
           <input type="checkbox" class="todo-checkbox" ${t.done ? 'checked' : ''}
             onchange="toggleTodo('${t.id}')" aria-label="Mark complete" />
-          <span class="todo-text" onclick="startEditTodo('${t.id}')">${esc(t.text)}</span>
-          <span class="todo-time">${formatTime(t.createdAt)}</span>
-          <button class="todo-delete" onclick="deleteTodo('${t.id}')" aria-label="Delete">${X_ICON}</button>
+          <span class="todo-text" onclick="startEditTodo('${t.id}')">${renderTodoTextWithLinks(t.text)}</span>
+          <div class="todo-actions">
+            <span class="todo-time">${formatTime(t.createdAt)}</span>
+            <button class="todo-delete" onclick="deleteTodo('${t.id}')" aria-label="Delete">${X_ICON}</button>
+          </div>
         </div>`;
     }
 
     function toggleCompleted() {
-      completedOpen = !completedOpen;
+      // legacy – maps to default section
+      completedOpenBySection['default'] = !completedOpenBySection['default'];
+      renderTodos();
+    }
+
+    function toggleCompletedSection(sectionKey) {
+      completedOpenBySection[sectionKey] = !completedOpenBySection[sectionKey];
+      renderTodos();
+    }
+
+    // ── Drag & drop ───────────────────────────────
+    let _sectionDragId = null;
+
+    // Todo drag
+    function todoDragStart(event, id) {
+      _todoDragId = id;
+      _sectionDragId = null;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('type', 'todo');
+      setTimeout(() => { event.target.style.opacity = '0.4'; document.body.classList.add('dragging-todo'); }, 0);
+    }
+    function todoDragEnd(event) {
+      _todoDragId = null;
+      event.target.style.opacity = '';
+      document.body.classList.remove('dragging-todo');
+      document.querySelectorAll('.todo-drop-zone.drag-over, .todo-section-block.section-drag-over')
+        .forEach(el => el.classList.remove('drag-over', 'section-drag-over'));
+    }
+    function todoDragOver(event, el) {
+      if (_sectionDragId) return; // ignore todo drop zones when dragging section
+      event.preventDefault();
+      event.stopPropagation();
+      document.querySelectorAll('.todo-drop-zone').forEach(z => z.classList.remove('drag-over'));
+      el.classList.add('drag-over');
+    }
+    function todoDragLeave(el) {
+      el.classList.remove('drag-over');
+    }
+    function todoDropOn(event, el) {
+      event.preventDefault();
+      event.stopPropagation();
+      el.classList.remove('drag-over');
+      if (!_todoDragId) return;
+      const rawSection = el.dataset.section;
+      const newSectionId = rawSection === '__default__' ? null : rawSection;
+      // Find drop position: insert before the next todo in this zone
+      const afterEl = el.nextElementSibling;
+      const afterId = afterEl?.classList.contains('todo-item') ? afterEl.dataset.id : null;
+      const t = todos.find(x => x.id === _todoDragId);
+      if (!t) return;
+      // Update sectionId
+      if (newSectionId) t.sectionId = newSectionId; else delete t.sectionId;
+      // Reorder: move todo just before afterId in todos array
+      todos = todos.filter(x => x.id !== _todoDragId);
+      if (afterId) {
+        const idx = todos.findIndex(x => x.id === afterId);
+        todos.splice(idx, 0, t);
+      } else {
+        // Drop at end of section — find the section block boundary
+        const secId = newSectionId;
+        const secIdx = secId ? todos.findIndex(x => x.id === secId) : -1;
+        // Find last todo in this section
+        let insertAt = todos.length;
+        if (secId) {
+          for (let i = secIdx + 1; i < todos.length; i++) {
+            if (todos[i].type === 'section') { insertAt = i; break; }
+          }
+        }
+        todos.splice(insertAt, 0, t);
+      }
+      save(TODOS_KEY, todos);
+      renderTodos();
+    }
+
+    // Section drag (reorder sections)
+    function sectionDragStart(event, id) {
+      _sectionDragId = id;
+      _todoDragId = null;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('type', 'section');
+      setTimeout(() => {
+        const block = document.querySelector(`.todo-section-block[data-section-id="${id}"]`);
+        if (block) block.style.opacity = '0.4';
+      }, 0);
+    }
+    function sectionDragEnd(event) {
+      _sectionDragId = null;
+      document.querySelectorAll('.todo-section-block').forEach(b => b.style.opacity = '');
+      document.querySelectorAll('.section-drag-over').forEach(b => b.classList.remove('section-drag-over'));
+    }
+    function sectionDragOver(event, el) {
+      if (!_sectionDragId) return;
+      if (el.dataset.sectionId === _sectionDragId) return;
+      event.preventDefault();
+      event.stopPropagation();
+      document.querySelectorAll('.section-drag-over').forEach(b => b.classList.remove('section-drag-over'));
+      el.classList.add('section-drag-over');
+    }
+    function sectionDragLeave(el) {
+      el.classList.remove('section-drag-over');
+    }
+    function sectionDropOn(event, el) {
+      event.preventDefault();
+      el.classList.remove('section-drag-over');
+      if (!_sectionDragId) return;
+      const targetId = el.dataset.sectionId;
+      if (!targetId || targetId === _sectionDragId) return;
+      // Reorder: move dragged section before target section in todos array
+      const draggedSec = todos.find(t => t.id === _sectionDragId);
+      if (!draggedSec) return;
+      todos = todos.filter(t => t.id !== _sectionDragId);
+      const targetIdx = todos.findIndex(t => t.id === targetId);
+      todos.splice(targetIdx, 0, draggedSec);
+      save(TODOS_KEY, todos);
+      renderTodos();
+    }
+
+    // ── Section management ────────────────────────
+    function addSection() {
+      const sec = { id: crypto.randomUUID(), type: 'section', name: 'New section', createdAt: new Date().toISOString() };
+      todos.push(sec);
+      save(TODOS_KEY, todos);
+      renderTodos();
+      // Enter edit mode on the new section name
+      setTimeout(() => startEditSection(sec.id), 0);
+    }
+
+    function startEditSection(id) {
+      const nameEl = document.querySelector(`.section-name[onclick="startEditSection('${id}')"]`);
+      if (!nameEl) return;
+      const sec = todos.find(t => t.id === id);
+      if (!sec) return;
+      const original = sec.name;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'section-name-input';
+      input.value = original;
+      nameEl.replaceWith(input);
+      input.focus();
+      input.select();
+      let cancelled = false;
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { cancelled = true; renderTodos(); }
+      });
+      input.addEventListener('blur', () => {
+        if (cancelled) return;
+        const val = input.value.trim();
+        if (val) { sec.name = val; save(TODOS_KEY, todos); }
+        renderTodos();
+      });
+    }
+
+    function deleteSection(id) {
+      if (!confirm('Delete section and its todos?')) return;
+      todos = todos.filter(t => !(t.id === id || t.sectionId === id));
+      save(TODOS_KEY, todos);
       renderTodos();
     }
 
@@ -2108,9 +2800,14 @@
       input.focus();
 
       let cancelled = false;
+      let addBelow = false;
 
       input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (!e.shiftKey) addBelow = true;
+          input.blur();
+        }
         if (e.key === 'Escape') {
           cancelled = true;
           renderTodos();
@@ -2120,11 +2817,20 @@
       input.addEventListener('blur', () => {
         if (cancelled) return;
         const val = input.value.trim();
-        if (val && val !== original) {
-          const t = todos.find(t => t.id === id);
-          if (t) { t.text = val; save(TODOS_KEY, todos); }
+        const t = todos.find(t => t.id === id);
+        if (t && val && val !== original) { t.text = val; }
+        if (addBelow) {
+          const newTodo = { id: crypto.randomUUID(), type: 'todo', text: '', done: false, createdAt: new Date().toISOString() };
+          if (t?.sectionId) newTodo.sectionId = t.sectionId;
+          const idx = todos.findIndex(x => x.id === id);
+          todos.splice(idx + 1, 0, newTodo);
+          save(TODOS_KEY, todos);
+          renderTodos();
+          setTimeout(() => startEditTodo(newTodo.id), 0);
+        } else {
+          if (t && val && val !== original) save(TODOS_KEY, todos);
+          renderTodos();
         }
-        renderTodos();
       });
     }
 
@@ -2190,39 +2896,22 @@
           </div>`;
         return;
       }
-      const sorted = insps.slice().reverse();
-      c.innerHTML = inspView === 'grid'
-        ? `<div class="insp-grid">${sorted.map(renderInspCard).join('')}</div>`
-        : `<div class="insp-doc">${sorted.map(renderInspDocRow).join('')}</div>`;
+      c.innerHTML = `<div class="insp-grid">${insps.slice().reverse().map(renderInspCard).join('')}</div>`;
     }
 
     function renderInspCard(p) {
-      const tags  = Array.isArray(p.tags) ? p.tags : [];
-      const title = p.text.split('\n')[0].slice(0, 80);
-      return `
-        <div class="insp-card" data-id="${p.id}">
-          <div class="insp-card-header">
-            <div class="insp-card-title">${esc(title)}</div>
-            <button class="insp-delete-btn" onclick="deleteInsp('${p.id}')" aria-label="Delete">${X_ICON}</button>
-          </div>
-          <div class="insp-card-body">${esc(p.text)}</div>
-          <div class="insp-card-footer">
-            <div class="insp-tags">${tags.map(t => `<span class="insp-tag">${esc(t)}</span>`).join('')}</div>
-            <button class="action-btn" onclick="copyInsp(this,'${p.id}')">Copy</button>
-          </div>
-        </div>`;
-    }
-
-    function renderInspDocRow(p) {
       const tags = Array.isArray(p.tags) ? p.tags : [];
+      const isEmbed = isStandaloneUrl(p.text);
+      if (isEmbed && !_embedCache[p.id]) fetchEmbed(p.id, p.text.trim(), () => renderInsps());
+      const body = isEmbed ? renderEmbedCard(p.id, p.text.trim()) : linkifyEsc(p.text);
+      const tagsHtml = tags.length ? `<div class="note-tags">${tags.map(t => `<span class="tag-pill">${esc(t)}</span>`).join('')}</div>` : '';
       return `
-        <div class="insp-doc-row" data-id="${p.id}">
-          <div class="insp-doc-text">${esc(p.text)}</div>
-          <div class="insp-doc-right">
-            <button class="insp-doc-delete" onclick="deleteInsp('${p.id}')" aria-label="Delete">${X_ICON}</button>
+        <div class="note-card" data-id="${p.id}">
+          <div class="note-text">${body}${tagsHtml}</div>
+          <div class="note-meta">
+            <button class="delete-btn" onclick="deleteInsp('${p.id}')" aria-label="Delete">${X_ICON}</button>
+            <span class="note-time">${formatTime(p.createdAt)}</span>
             <button class="action-btn" onclick="copyInsp(this,'${p.id}')">Copy</button>
-            ${tags.length ? `<div class="insp-tags">${tags.map(t => `<span class="insp-tag">${esc(t)}</span>`).join('')}</div>` : ''}
-            <span class="insp-time">${formatTime(p.createdAt)}</span>
           </div>
         </div>`;
     }
@@ -2233,7 +2922,7 @@
     }
 
     function deleteInsp(id) {
-      const el = document.querySelector(`.insp-card[data-id="${id}"], .insp-doc-row[data-id="${id}"]`);
+      const el = document.querySelector(`#insp-container .note-card[data-id="${id}"]`);
       if (!el) return;
       el.classList.add('removing');
       el.addEventListener('animationend', () => {
@@ -2651,6 +3340,13 @@
     const EYE_ON  = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/></svg>`;
     const EYE_OFF = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8s2.5-5 7-5 5.3 2.9 6.5 4.5M15 8c-.4.7-1 1.5-1.8 2.2M2 2l12 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
 
+    function openSyntaxRef() {
+      document.getElementById('syntax-overlay').classList.add('open');
+    }
+    function closeSyntaxRef() {
+      document.getElementById('syntax-overlay').classList.remove('open');
+    }
+
     function openCustomize() {
       _custDraft = tabsConfig.map(t => ({...t, tags: [...t.tags]}));
       renderCustomizeRows();
@@ -2864,7 +3560,177 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+
+    // ── Right-click hyperlink context menu ──────────
+    let _ctxTarget = null;
+    function _removeCtx() {
+      document.getElementById('link-ctx-menu')?.remove();
+      document.getElementById('link-url-popup')?.remove();
+      _ctxTarget = null;
+    }
+
+    function _attachLinkContextMenu(el) {
+      el.addEventListener('contextmenu', e => {
+        const sel = el.value.substring(el.selectionStart, el.selectionEnd).trim();
+        if (!sel) return; // no selection — show native menu
+        e.preventDefault();
+        _removeCtx();
+        _ctxTarget = el;
+
+        const menu = document.createElement('div');
+        menu.id = 'link-ctx-menu';
+        menu.className = 'link-ctx-menu';
+        menu.innerHTML = `<button class="link-ctx-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6.5 9.5l3-3M5 11a3.5 3.5 0 01-1-6.9L5.5 2.6A3.5 3.5 0 019.9 7L8.5 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11 5a3.5 3.5 0 011 6.9l-1.5 1.5A3.5 3.5 0 016.1 9L7.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Add link
+        </button>`;
+        menu.style.left = e.clientX + 'px';
+        menu.style.top  = e.clientY + 'px';
+        document.body.appendChild(menu);
+
+        menu.querySelector('button').addEventListener('mousedown', ev => {
+          ev.preventDefault();
+          ev.stopPropagation(); // prevent dismiss listener from firing on this same click
+          // snapshot selection before _removeCtx clears the menu
+          const snapStart = el.selectionStart;
+          const snapEnd   = el.selectionEnd;
+          _removeCtx();
+          _showUrlPopup(el, snapStart, snapEnd, e.clientX, e.clientY);
+        });
+
+        setTimeout(() => document.addEventListener('mousedown', _removeCtx, { once: true }), 0);
+      });
+    }
+
+    function _showUrlPopup(el, snapStart, snapEnd, x, y) {
+      const popup = document.createElement('div');
+      popup.id = 'link-url-popup';
+      popup.className = 'link-url-popup';
+      popup.innerHTML = `<input class="link-url-input" placeholder="Paste or type a URL…" /><button class="link-url-confirm">Add</button><button class="link-ctx-item" style="padding:5px 8px;font-size:12px" id="link-url-cancel">Cancel</button>`;
+
+      // Position near cursor, keep within viewport
+      popup.style.left = '-9999px';
+      popup.style.top  = '-9999px';
+      document.body.appendChild(popup);
+      const pw = popup.offsetWidth, ph = popup.offsetHeight;
+      const left = Math.min(x, window.innerWidth  - pw - 12);
+      const top  = Math.min(y + 6, window.innerHeight - ph - 12);
+      popup.style.left = Math.max(8, left) + 'px';
+      popup.style.top  = Math.max(8, top)  + 'px';
+
+      const urlInput = popup.querySelector('.link-url-input');
+      urlInput.focus();
+
+      function applyLink() {
+        let url = urlInput.value.trim();
+        if (!url) { _removeCtx(); el.focus(); return; }
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        const sel = el.value.substring(snapStart, snapEnd);
+        _removeCtx();
+        // Don't change textarea value — just register the link region
+        if (el === compose) {
+          _addPendingLink(snapStart, snapEnd, sel, url);
+          _prevComposeLen = compose.value.length;
+          syncBackdrop();
+        }
+        el.selectionStart = el.selectionEnd = snapEnd;
+        el.focus();
+      }
+
+      // Use mousedown+preventDefault so focus never leaves el before we can act
+      popup.querySelector('.link-url-confirm').addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        applyLink();
+      });
+      document.getElementById('link-url-cancel').addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        _removeCtx(); el.focus();
+      });
+      urlInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter')  { e.preventDefault(); applyLink(); }
+        if (e.key === 'Escape') { _removeCtx(); el.focus(); }
+      });
+
+      // Dismiss on outside click — delayed so this mouseup doesn't immediately close it
+      setTimeout(() => document.addEventListener('mousedown', ev => {
+        if (!popup.contains(ev.target)) { _removeCtx(); }
+      }, { once: true }), 100);
+    }
+
+    // Paste URL over selection → auto-wrap as [text](url)
+    function _attachPasteLink(el) {
+      el.addEventListener('paste', e => {
+        const start = el.selectionStart, end = el.selectionEnd;
+        if (start === end) return; // nothing selected
+        const pasted = (e.clipboardData || window.clipboardData).getData('text').trim();
+        if (!/^https?:\/\/[^\s]+$/.test(pasted)) return; // not a plain URL
+        e.preventDefault();
+        const sel = el.value.substring(start, end);
+        if (el === compose) {
+          _addPendingLink(start, end, sel, pasted);
+          _prevComposeLen = compose.value.length;
+          syncBackdrop();
+        }
+        el.selectionStart = el.selectionEnd = end;
+      });
+    }
+
+    // Attach to compose textarea
+    _attachLinkContextMenu(document.getElementById('compose'));
+    _attachPasteLink(document.getElementById('compose'));
+
+    // Attach to todo inline edit inputs (delegated via MutationObserver)
+    new MutationObserver(() => {
+      document.querySelectorAll('.todo-edit-input:not([data-ctx])').forEach(inp => {
+        inp.dataset.ctx = '1';
+        _attachLinkContextMenu(inp);
+        _attachPasteLink(inp);
+      });
+    }).observe(document.body, { subtree: true, childList: true });
   </script>
+
+  <!-- Syntax Reference Modal -->
+  <div class="syntax-overlay" id="syntax-overlay" onclick="if(event.target===this)closeSyntaxRef()">
+    <div class="syntax-modal">
+      <div class="syntax-modal-header">
+        <span class="syntax-modal-title">Compose syntax</span>
+        <button class="customize-modal-close" onclick="closeSyntaxRef()">✕</button>
+      </div>
+      <div class="syntax-modal-body">
+        <div>
+          <div class="syntax-group-title">General</div>
+          <div class="syntax-row"><span class="syntax-code">Enter</span><span class="syntax-desc">Save note</span></div>
+          <div class="syntax-row"><span class="syntax-code">Shift+Enter</span><span class="syntax-desc">New line (no save)</span></div>
+        </div>
+        <div>
+          <div class="syntax-group-title">Notes &amp; Todos</div>
+          <div class="syntax-row"><span class="syntax-code">[ ] task</span><span class="syntax-desc">Create a todo item</span></div>
+          <div class="syntax-row"><span class="syntax-code">[ ] task 1<br>[ ] task 2</span><span class="syntax-desc">Create multiple todos at once</span></div>
+          <div class="syntax-row"><span class="syntax-code">#todo</span><span class="syntax-desc">Route all lines as todos</span></div>
+          <div class="syntax-row"><span class="syntax-code">## Section name</span><span class="syntax-desc">Create a section; todos below go into it</span></div>
+          <div class="syntax-row"><span class="syntax-code">[ ] task @section-name</span><span class="syntax-desc">Route todo to a named section</span></div>
+          <div class="syntax-row"><span class="syntax-code">[label](url)</span><span class="syntax-desc">Inline hyperlink — or select text &amp; right-click → Add link</span></div>
+          <div class="syntax-row"><span class="syntax-code">Enter (in edit mode)</span><span class="syntax-desc">Save &amp; create new todo below</span></div>
+          <div class="syntax-row"><span class="syntax-code">Shift+Enter (in edit mode)</span><span class="syntax-desc">Save only, no new todo</span></div>
+        </div>
+        <div>
+          <div class="syntax-group-title">Inspiration</div>
+          <div class="syntax-row"><span class="syntax-code">#insp</span><span class="syntax-desc">Route to Inspiration tab</span></div>
+          <div class="syntax-row"><span class="syntax-code">#tag</span><span class="syntax-desc">Free-form category tag (e.g. #illustration)</span></div>
+        </div>
+        <div>
+          <div class="syntax-group-title">1:1 Notes</div>
+          <div class="syntax-row"><span class="syntax-code">@name</span><span class="syntax-desc">Route to 1:1 Notes, grouped by person</span></div>
+        </div>
+        <div>
+          <div class="syntax-group-title">Instances</div>
+          <div class="syntax-row"><span class="syntax-code">#instance</span><span class="syntax-desc">Route to Instances tab</span></div>
+          <div class="syntax-row"><span class="syntax-code">Name (optional)<br>URL<br>username<br>password<br>* notes (optional)</span><span class="syntax-desc">Positional credential format; name auto-generated from URL if omitted</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Customize Tabs Modal -->
   <div class="customize-overlay" id="customize-overlay" onclick="if(event.target===this)closeCustomize()">
