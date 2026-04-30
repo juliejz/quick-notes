@@ -2889,11 +2889,15 @@
     function renderInsps() {
       const c = document.getElementById('insp-container');
       if (!insps.length) {
+        const inspTab = tabsConfig.find(t => t.id === 'insp') || {};
+        const inspLabel = inspTab.label || 'Inspiration';
+        const inspTag  = (inspTab.tags || ['#insp'])[0] || '#insp';
         c.innerHTML = `
           <div class="empty-state">
             <div class="empty-icon">✦</div>
-            <p>No inspiration yet</p>
-            <span>Add with <span class="hint-tag">#insp</span> · side tags for categories</span>
+            <p>No ${inspLabel.toLowerCase()} yet</p>
+            <span>Add with <span class="hint-tag">${esc(inspTag)}</span> · side tags for categories</span>
+            <span style="margin-top:4px">Customize your tag settings <a class="inline-link" href="#" onclick="event.preventDefault();openCustomize()">here</a></span>
           </div>`;
         return;
       }
@@ -3145,11 +3149,15 @@
       updateSortUI();
       const c = document.getElementById('demos-container');
       if (!demos.length) {
+        const demosTab = tabsConfig.find(t => t.id === 'demos') || {};
+        const demosLabel = demosTab.label || 'Instances';
+        const demosTag  = (demosTab.tags || ['#instance'])[0] || '#instance';
         c.innerHTML = `
           <div class="empty-state">
             <div class="empty-icon">✦</div>
-            <p>No instances yet</p>
-            <span>Paste a URL with <span class="hint-tag">#instance</span></span>
+            <p>No ${demosLabel.toLowerCase()} yet</p>
+            <span>Paste a URL with <span class="hint-tag">${esc(demosTag)}</span></span>
+            <span style="margin-top:4px">Customize your tag settings <a class="inline-link" href="#" onclick="event.preventDefault();openCustomize()">here</a></span>
           </div>`;
         return;
       }
@@ -3511,6 +3519,8 @@
       localStorage.setItem(TABS_CFG_KEY, JSON.stringify(tabsConfig));
       renderTabBar();
       updateHintTags();
+      renderInsps();
+      renderDemos();
       closeCustomize();
     }
 
