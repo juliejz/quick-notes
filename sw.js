@@ -1,4 +1,4 @@
-const CACHE = 'quick-notes-v4';
+const CACHE = 'quick-notes-v5';
 const ASSETS = ['/', '/index.html', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', e =>
