@@ -159,7 +159,7 @@
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; user-select: none;
     }
-    .auth-menu-wrap { position: relative; }
+    .auth-menu-wrap { position: relative; display: flex; align-items: center; }
     .auth-menu {
       position: absolute; top: calc(100% + 8px); right: 0;
       background: var(--surface2); border: 1px solid var(--border);
@@ -1445,7 +1445,7 @@
           </button>
         </div>
         <div class="sync-dot" id="sync-dot" title="Syncing…"></div>
-        <div id="auth-slot" style="visibility:hidden"></div>
+        <div id="auth-slot" style="visibility:hidden;display:flex;align-items:center"></div>
       </div>
     </nav>
 
