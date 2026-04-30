@@ -1722,7 +1722,7 @@
           : `<div class="auth-initial">${initial}</div>`;
         slot.innerHTML = `
           <div class="auth-menu-wrap" id="auth-menu-wrap">
-            <div onclick="toggleAuthMenu()">${avatar}</div>
+            <div onclick="toggleAuthMenu()" style="display:flex;align-items:center;line-height:0">${avatar}</div>
             <div class="auth-menu" id="auth-menu">
               <div class="auth-menu-name">${name}</div>
               <div class="auth-menu-item" onclick="signOut()">Sign out</div>
