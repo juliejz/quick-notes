@@ -207,6 +207,8 @@ Links render as clickable `<a>` elements in saved notes/ideas. Bare URLs in text
 2. `#todo` tag on the block → all lines become todos
 One submit creates multiple todos.
 
+**Instance ghost hint** — when `#instance` is typed in the compose box, a ghost overlay shows the expected field order (Name, URL, Username, Password, `* notes`) as placeholder text to guide input.
+
 **Credential parsing** (when credential tag present) — positional line format:
 ```
 Name (optional)
@@ -246,6 +248,7 @@ Two content types stacked vertically:
 - Checking an item marks it done: grey + strikethrough
 - Completed items collapse under a chevron toggle (▸ Completed N), stays until manually deleted
 - Delete via ✕ (hover to reveal)
+- **`## Section name`** on any line creates a named section header; todos that follow are grouped under it
 
 **Plain notes (below):**
 - Newest first
@@ -256,6 +259,7 @@ A horizontal divider separates todos from notes when both are present.
 ### 3.3 Inspiration tab
 Prompt text + free-form side tags (e.g. `#illustration`, `#layout`).
 - **2-column grid** — cards use the same style as Notes cards (no bullet dot); each card shows full text, tags, Copy button, timestamp, and delete (hover to reveal)
+
 - The routing tag (default `#insp`) is stripped from stored tags; it's the router, not a category
 - Empty state text reads the tab's current label and routing tag dynamically from `tabsConfig`, and includes a "Customize your tag settings here" link that opens the customize modal
 

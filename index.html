@@ -382,25 +382,6 @@
     .syntax-desc { font-size: 13px; color: var(--muted); }
 
     /* ── Rich embed card ── */
-    .rich-embed {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--surface3);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      text-decoration: none;
-      color: var(--text);
-      margin-top: 6px;
-      transition: border-color 0.15s;
-    }
-    .rich-embed:hover { border-color: var(--muted); }
-    .rich-embed-favicon {
-      width: 16px; height: 16px;
-      flex-shrink: 0; border-radius: 3px;
-    }
-    .rich-embed-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .rich-embed-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .rich-embed-domain { font-size: 11px; color: var(--muted); }
 
     /* ── Link context menu ── */
     .link-ctx-menu {
@@ -1881,44 +1862,6 @@
       return result;
     }
 
-    // ── Rich embed cache: id → { title, favicon, domain } | 'loading' | 'error' ──
-    const _embedCache = {};
-    function isStandaloneUrl(text) {
-      return /^https?:\/\/[^\s]+$/.test(text.trim());
-    }
-    function fetchEmbed(id, url, onDone) {
-      if (_embedCache[id]) { onDone(); return; }
-      _embedCache[id] = 'loading';
-      fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}&meta=true`)
-        .then(r => r.json())
-        .then(data => {
-          const d = data?.data;
-          _embedCache[id] = {
-            title: d?.title || new URL(url).hostname,
-            favicon: d?.logo?.url || `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(new URL(url).hostname)}`,
-            domain: new URL(url).hostname
-          };
-          onDone();
-        })
-        .catch(() => {
-          try {
-            _embedCache[id] = { title: new URL(url).hostname, favicon: `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(new URL(url).hostname)}`, domain: new URL(url).hostname };
-          } catch { _embedCache[id] = 'error'; }
-          onDone();
-        });
-    }
-    function renderEmbedCard(id, url) {
-      const c = _embedCache[id];
-      if (!c || c === 'loading') return `<a class="rich-embed" href="${esc(url)}" target="_blank" rel="noopener"><span class="rich-embed-info"><span class="rich-embed-domain">${esc(url)}</span></span></a>`;
-      if (c === 'error') return `<a class="inline-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a>`;
-      return `<a class="rich-embed" href="${esc(url)}" target="_blank" rel="noopener">
-        ${c.favicon ? `<img class="rich-embed-favicon" src="${esc(c.favicon)}" onerror="this.style.display='none'" />` : ''}
-        <span class="rich-embed-info">
-          <span class="rich-embed-title">${esc(c.title)}</span>
-          <span class="rich-embed-domain">${esc(c.domain)}</span>
-        </span>
-      </a>`;
-    }
 
     function parseTags(str) { return (str || '').match(/[#@][\w-]+/g) || []; }
 
@@ -2517,16 +2460,10 @@
       _syncEmptyState();
       const notesList = document.getElementById('notes-list');
       notesList.innerHTML = notes.slice().reverse().map(n => {
-        const isEmbed = isStandaloneUrl(n.text);
-        if (isEmbed && !_embedCache[n.id]) {
-          fetchEmbed(n.id, n.text.trim(), () => renderNoteCards());
-        }
-        const body = isEmbed
-          ? renderEmbedCard(n.id, n.text.trim())
-          : `<div class="note-text" onclick="startEditNote('${n.id}')">${linkifyEsc(n.text)}</div>`;
+        const body = `<div class="note-text" onclick="startEditNote('${n.id}')">${linkifyEsc(n.text)}</div>`;
         return `
         <div class="note-card" data-id="${n.id}">
-          ${isEmbed ? `<div class="note-text">${body}</div>` : body}
+          ${body}
           <div class="note-meta">
             <button class="delete-btn" onclick="deleteNote('${n.id}')" aria-label="Delete">${X_ICON}</button>
             <span class="note-time">${formatTime(n.createdAt)}</span>
@@ -2907,9 +2844,7 @@
 
     function renderInspCard(p) {
       const tags = Array.isArray(p.tags) ? p.tags : [];
-      const isEmbed = isStandaloneUrl(p.text);
-      if (isEmbed && !_embedCache[p.id]) fetchEmbed(p.id, p.text.trim(), () => renderInsps());
-      const body = isEmbed ? renderEmbedCard(p.id, p.text.trim()) : linkifyEsc(p.text);
+      const body = linkifyEsc(p.text);
       const tagsHtml = tags.length ? `<div class="note-tags">${tags.map(t => `<span class="tag-pill">${esc(t)}</span>`).join('')}</div>` : '';
       return `
         <div class="note-card" data-id="${p.id}">
