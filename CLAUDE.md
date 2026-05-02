@@ -1,5 +1,5 @@
 # Quick Notes — Context & Rules
-_Last updated: 2026-04-30_
+_Last updated: 2026-05-02_
 
 ---
 
@@ -50,6 +50,8 @@ quick-notes/
 ├── icon.png                # PWA icon (1024×1024 PNG, used in manifest)
 ├── favicon.png             # Browser tab favicon (cropped tightly from icon.png, 256×256)
 ├── pitfalls.md             # Tricky bugs that took multiple attempts — read before touching related code
+├── testing/                # QA test plan
+│   └── test-plan.md
 ├── mockups/                # UI explorations, grouped by design variable
 │   └── {variable-name}/    # One subfolder per tab (e.g. overall-layout, instance-tab)
 │       ├── option-01.html
@@ -147,9 +149,22 @@ self.addEventListener('activate', e =>
     Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
   ))
 );
-self.addEventListener('fetch', e =>
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)))
-);
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  if (url.pathname === '/' || url.pathname.endsWith('/index.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+  } else {
+    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+  }
+});
 ```
 
 ### 2.7 Required HTML head tags
@@ -162,7 +177,8 @@ self.addEventListener('fetch', e =>
 ```
 
 ### 2.8 Data persistence
-Five localStorage keys — one per content type:
+
+**localStorage** is the primary read/write layer (instant, offline-safe). Five keys:
 
 ```js
 const NOTES_KEY = 'quick-notes';    // plain notes
@@ -171,6 +187,14 @@ const INSP_KEY  = 'quick-insp';     // inspiration / prompts
 const OON_KEY   = 'quick-oon';      // 1:1 notes
 const DEMOS_KEY = 'demo-instances'; // credential cards
 ```
+
+**Firestore** is the cloud sync layer (Firebase compat SDK v10). Every save triggers a debounced (800 ms) write to:
+```
+users/{uid}/data/all
+```
+A single document holds all five collections plus `updatedAt`. On sign-in, `loadFromFirestore(uid)` pulls this document and overwrites localStorage, then re-renders.
+
+The green sync dot (opacity transition, never shifts layout) flashes during the Firestore write.
 
 Schemas:
 - Plain note: `{ id, type: 'note', text, tags, createdAt }`
@@ -294,16 +318,15 @@ Config stored in `localStorage` under key `quick-tabs-config`. Tab bar, routing 
 - `[ ]` / `#todo` → always routes to Notes tab
 - `@name` mentions → always routes to 1:1 Notes tab
 
-### 3.8 Cloud sync (planned — not yet built)
-**Current:** all data in `localStorage` only. Clearing site data (DevTools or Chrome settings) wipes everything.
+### 3.8 Cloud sync
+**Built and live.** Firebase (Firestore + Google Auth) backs the app.
 
-**Planned:** GitHub Gist sync
-- User generates a GitHub PAT with `gist` scope and enters it once in the app
-- App auto-creates a private Gist on first sync; stores Gist ID in localStorage
-- Every save pushes data to the Gist in the background (non-blocking)
-- On app open, pulls latest data from Gist; localStorage used as fallback when offline
-
-**If the app ever goes multi-user (shared with colleagues):** migrate to Supabase — free tier covers small teams, has auth + row-level security, and the flat JSON data schema maps directly to Supabase tables.
+- Sign in with Google → auth handled by `firebase.auth().signInWithPopup()`
+- On sign-in: `loadFromFirestore(uid)` pulls `users/{uid}/data/all`, overwrites localStorage, re-renders
+- Every save: debounced 800 ms write to the same document (all five collections + `updatedAt`)
+- localStorage is always written first → instant UI, Firestore write is non-blocking
+- Signed-out state: app works fully offline with localStorage only; no sync dot shown
+- Firestore project: `quick-notes-9606c`
 
 ### 3.9 Out of scope
 - No editing of saved items (except Demo Instances — see 3.5)
@@ -374,4 +397,4 @@ The ✦ mark in `--accent`, wordmark in DM Serif Display italic. Avatar is the s
 - **No browser chrome:** `display: standalone` removes the URL bar and tabs
 - **Offline-capable:** service worker ensures the app opens even with no internet
 - **Theme color:** matches `--surface` (`#131312` dark / `#ffffff` light) so the title bar blends with the app background on macOS
-- **Cache busting:** bump `CACHE` version in `sw.js` on every deploy; in dev, use DevTools → Application → Service Workers → Unregister then hard reload
+- **Cache busting:** only bump `CACHE` version in `sw.js` when static assets (`manifest.json`, `icon.svg`, `favicon.png`) change — never for `index.html` changes, since it uses network-first. In dev, use DevTools → Application → Service Workers → Unregister then hard reload
