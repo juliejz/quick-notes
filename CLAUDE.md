@@ -43,7 +43,6 @@ python3 -m http.server 3456
 ```
 quick-notes/
 ├── index.html              # The app itself (PWA entry point)
-├── project.html            # Standalone project page — browse UI options locally
 ├── manifest.json           # PWA config
 ├── sw.js                   # Service worker (offline support)
 ├── icon.svg                # PWA icon (SVG, any size)
@@ -52,16 +51,18 @@ quick-notes/
 ├── pitfalls.md             # Tricky bugs that took multiple attempts — read before touching related code
 ├── testing/                # QA test plan
 │   └── test-plan.md
-├── mockups/                # UI explorations, grouped by design variable
-│   └── {variable-name}/    # One subfolder per tab (e.g. overall-layout, instance-tab)
-│       ├── option-01.html
-│       ├── option-02.html
-│       └── option-03.html
+├── design/                 # Design exploration — not part of the app
+│   ├── project.html        # Browse UI options locally
+│   └── mockups/            # UI explorations, grouped by design variable
+│       └── {variable-name}/    # One subfolder per tab (e.g. overall-layout, instance-tab)
+│           ├── option-01.html
+│           ├── option-02.html
+│           └── option-03.html
 └── CLAUDE.md               # This file
 ```
 
 **Mockups → tabs mapping:**
-Each subfolder under `mockups/` maps to one tab in `project.html`. The folder name becomes the tab label (kebab-case → Title Case, e.g. `overall-layout` → "Overall Layout"). Options within a folder are numbered sequentially. If only one subfolder exists, the tab bar is hidden and options are shown directly.
+Each subfolder under `design/mockups/` maps to one tab in `design/project.html`. The folder name becomes the tab label (kebab-case → Title Case, e.g. `overall-layout` → "Overall Layout"). Options within a folder are numbered sequentially. If only one subfolder exists, the tab bar is hidden and options are shown directly.
 
 ### 2.3 How this repo connects to Jing's Design Hub
 
