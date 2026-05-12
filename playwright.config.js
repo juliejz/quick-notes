@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './testing',
+  testDir: './testing/specs',
   use: {
     baseURL: 'http://localhost:3456',
     video: 'on',
