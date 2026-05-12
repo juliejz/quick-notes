@@ -168,6 +168,31 @@ The `div[onclick]` wrapper had no explicit display/line-height, so it carried th
 
 ---
 
+## 12. PWA on Dock opened a 404 — `start_url: "/"` resolved to GitHub Pages user root, not the project subpath
+
+**Symptom:** Clicking the Quick Notes icon in the Dock launched a window showing GitHub's 404 page (`juliejz.github.io/`). Opening the app from a browser tab (`/quick-notes/`) worked fine.
+
+**Root cause:** `manifest.json` had `"start_url": "/"`. On GitHub Pages, the app is served from a project subpath (`juliejz.github.io/quick-notes/`), but the user's GitHub root (`juliejz.github.io/`) has no site — hence 404. The "Open in app" button worked because it passes the current page URL, bypassing the manifest entirely; the Dock icon goes through the manifest's `start_url` since that's what was registered at PWA install time.
+
+**Fix in `manifest.json`:** use a relative path so the same manifest works in local dev (served from `/`) and on Pages (served from `/quick-notes/`):
+```json
+"start_url": "./",
+"scope": "./"
+```
+`./` resolves relative to the manifest's location, so the resolved start URL is whatever directory the manifest lives in.
+
+**Re-installing the PWA is required to pick up the change.** The OLD installed app shim has the old `start_url` baked in — Chrome does not auto-refresh it. Full clean-up sequence:
+1. Delete the installed app from `~/Applications/Chrome Apps.localized/Quick Notes.app` (Finder → drag to trash → empty trash)
+2. Visit `chrome://apps` and remove it from there too if listed
+3. **Cmd+Q to fully quit Chrome** (not just close the window — Chrome keeps state in memory)
+4. Reopen Chrome, visit the app, verify in DevTools → Application → Manifest that `Start URL` shows `./` (or the resolved subpath URL), then install via the address-bar install icon
+
+**Attempts that didn't work:**
+- Reinstalling via Chrome's install icon without first deleting the existing `.app` — Chrome treated it as an update and kept the old `start_url`
+- Bumping the service worker cache version — doesn't matter, the manifest cache lives outside the SW (Chrome's own PWA install storage)
+
+---
+
 ## 3. "Add link" popup — clicking Add button had no effect
 
 **Symptom:** Right-click → Add link → URL popup appeared → clicking "Add" did nothing; popup stayed open or closed with no change.
