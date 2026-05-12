@@ -1,0 +1,22 @@
+{
+  "name": "quick_notes_app",
+  "version": "1.0.0",
+  "main": "sw.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juliejz/quick-notes.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/juliejz/quick-notes/issues"
+  },
+  "homepage": "https://github.com/juliejz/quick-notes#readme",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0"
+  }
+}

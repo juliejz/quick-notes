@@ -3,6 +3,128 @@ _Bugs that took multiple attempts to fix. Read before touching related code._
 
 ---
 
+## Playwright test pitfalls — written 2026-05-08/09
+
+_43 tests written across 7 spec files: compose (9), notes-tab (7), inspiration-tab (6), oon-tab (3), instances-tab (8), theme (3), customize-tab (7). All passing. Notes below are pitfalls that caused test failures during authoring._
+
+---
+
+## 4. Opacity-based overlays look "visible" to Playwright
+
+**Symptom:** Tests checking `expect(overlay).not.toBeVisible()` always fail; tests checking `expect(overlay).toBeVisible()` always pass — even when the overlay is visually closed.
+
+**Root cause:** Several overlays in the app (customize modal `#customize-overlay`, OON modal `#oon-modal-overlay`, demo edit modal `#demo-edit-overlay`) use `opacity:0; pointer-events:none` for the closed state and add `.open` to show them. They are always in the DOM with non-zero size, so Playwright's `toBeVisible()` returns true regardless of open/closed state.
+
+**Fix in tests:** Check for the `.open` class instead of visibility:
+```js
+// Open:  await expect(page.locator('#customize-overlay.open')).toHaveCount(1);
+// Closed: await expect(page.locator('#customize-overlay.open')).toHaveCount(0);
+```
+
+---
+
+## 5. `filter({ hasText })` doesn't match input values — only text content
+
+**Symptom:** `.customize-row.filter({ hasText: 'Inspiration' })` returned 0 elements, causing tests to hang waiting for the element indefinitely.
+
+**Root cause:** Playwright's `hasText` filter checks an element's `textContent`, not the `value` attribute of child inputs. The customize rows only have text in `<input value="...">` elements, which contribute nothing to `textContent`.
+
+**Fix in tests:** Use `nth()` with the known tab order (Notes=0, Inspiration=1, 1:1 Notes=2, Instances=3):
+```js
+page.locator('.customize-row').nth(1).locator('input[data-field="label"]')
+```
+
+---
+
+## 6. Customize tag input updates `_custDraft` only on blur, inside a 150ms setTimeout
+
+**Symptom:** After `fill()` or `pressSequentially()` on a routing tag input and immediately saving, the saved config still had the old tag value.
+
+**Root cause:** `onCustTagInput` (the `oninput` handler) only shows autocomplete suggestions — it does **not** update `_custDraft`. The actual draft update happens in `onCustTagBlur`, inside `setTimeout(..., 150)`. If you click Save without waiting, `saveCustomize()` runs before the timeout fires and reads the stale `_custDraft` value.
+
+**Fix in tests:** Explicitly blur the input with `press('Tab')`, then wait for the timeout to fire:
+```js
+await tagInput.pressSequentially('#idea');
+await tagInput.press('Tab');
+await page.waitForTimeout(200);
+await saveCustomize(page);
+```
+
+---
+
+## 7. App bug: `validateCustConflict` ran before `_custDraft.tags` was updated — conflict warning never appeared
+
+**Symptom:** Test 7.5 (duplicate routing tag shows conflict warning) failed — `.cust-conflict.visible` had count 0 even after typing a conflicting tag.
+
+**Root cause:** Inside `onCustTagBlur`'s `setTimeout`, `validateCustConflict(idx)` was called BEFORE `_custDraft[idx].tags = parsed`. So the conflict check always ran against the OLD tag value, finding no conflict.
+
+**Fix in app (`index.html`):** Move the draft update before the validation call:
+```js
+// Before (broken):
+validateCustConflict(idx);
+_custDraft[idx].tags = parsed;
+
+// After (fixed):
+_custDraft[idx].tags = parsed;
+el.value = parsed.join(', ');
+validateCustConflict(idx);
+```
+
+---
+
+## 8. Wide-view instance cards have a different delete button class than grid-view cards
+
+**Symptom:** Test asserting `.demo-delete-btn` exists on a wide-view card failed — element not found.
+
+**Root cause:** The two view modes use different class names. Wide view (`renderDemoWideCard`): `.demo-wide-del`. Grid view (`renderDemoGridCard`): `.demo-delete-btn`.
+
+**Fix in tests:** Use `.demo-wide-del` when testing wide view (the default).
+
+---
+
+## 9. `toContainText` fails in strict mode when the locator matches multiple elements
+
+**Symptom:** `expect(page.locator('.tab-btn')).toContainText('Ideas')` threw a strict mode violation — there are 4 tab buttons.
+
+**Fix in tests:** Use a more specific locator:
+```js
+expect(page.locator('.tab-btn[data-tab="insp"]')).toContainText('Ideas')
+```
+
+---
+
+## 10. Clipboard API silently fails in headless Playwright without permission grant
+
+**Symptom:** Copy button test — button click seemed to do nothing; "Copied!" state never appeared.
+
+**Root cause:** The browser's clipboard API (`navigator.clipboard.writeText`) is blocked in headless mode without explicit permission.
+
+**Fix in tests:** Grant permissions at the test level (not just once at the suite level):
+```js
+test('...', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  ...
+});
+```
+
+---
+
+## 11. `[ ]` in compose — Enter key creates a new list item, not a submit
+
+**Symptom:** Test submitting a `[ ] task` by pressing Enter didn't work — the app created a new `[ ]` line instead of submitting.
+
+**Root cause:** The compose box has auto-list behavior: if the current line starts with `[ ]`, pressing Enter appends another `[ ]` line on the next line instead of submitting.
+
+**Fix in tests:** Use `Shift+Enter` between lines, then click the Add button:
+```js
+await page.keyboard.type('[ ] task one');
+await page.keyboard.press('Shift+Enter');
+await page.keyboard.type('[ ] task two');
+await page.click('button:has-text("Add")');
+```
+
+---
+
 ## 1. Nav avatar not vertically centred with theme toggle
 
 **Symptom:** Avatar top edge aligned with toggle top edge but bottom didn't match — clearly not centred. Showed up on GitHub Pages; localhost looked fine (likely because localhost used the `auth-initial` div fallback rather than the real `<img>`).

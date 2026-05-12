@@ -3395,8 +3395,7 @@
     function onCustTagBlur(el, idx) {
       setTimeout(() => {
         document.getElementById('cust-sugg-' + idx)?.classList.remove('visible');
-        validateCustConflict(idx);
-        // Commit parsed tags
+        // Commit parsed tags first, then validate so conflict check sees new value
         const raw = el.value;
         const parsed = raw.split(',').map(t => {
           t = t.trim();
@@ -3405,6 +3404,7 @@
         }).filter(Boolean);
         _custDraft[idx].tags = parsed;
         el.value = parsed.join(', ');
+        validateCustConflict(idx);
       }, 150);
     }
 
